@@ -18,16 +18,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
-      # Build and push image to Google Container Registry
-      - name: Setting up
+    
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v0
+        with:
+          credentials: ${{ secrets.GCP_SA_KEY }}
+  
+      - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
-          version: '356.0.0'
-          python-version: '3.8'
-          service_account_key: ${{ secrets.GCP_SA_KEY_JSON }}
-          service_account_email: github-actions@pace-risk-map.iam.gserviceaccount.com
+          version: '461.0.0'  # Replace with the version you want
           project_id: pace-risk-map
+
 
       - name: Building (🏗)
         run: |-

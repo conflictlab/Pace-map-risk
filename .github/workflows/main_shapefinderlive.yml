@@ -15,7 +15,6 @@ jobs:
   deploy:
     name: Deploying Risk Map
     runs-on: ubuntu-latest
-    if: "contains(github.event.head_commit.message, 'bump version')"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -38,7 +37,7 @@ jobs:
       - name: Deploy (🚀)
         uses: google-github-actions/deploy-cloudrun@main
         with:
-          service: SERVICE_ID
+          service:  pace-risk-map
           image: gcr.io/pace-risk-map/pace-risk-map
           region: us-east1
           credentials: ${{ secrets.GCP_SA_KEY_JSON }}

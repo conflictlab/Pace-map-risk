@@ -23,7 +23,8 @@ jobs:
       - name: Setting up
         uses: google-github-actions/setup-gcloud@v2
         with:
-          version: '286.0.0'
+          version: '356.0.0'
+          python-version: '3.8'
           service_account_key: ${{ secrets.GCP_SA_KEY_JSON }}
           service_account_email: github-actions@pace-risk-map.iam.gserviceaccount.com
           project_id: pace-risk-map

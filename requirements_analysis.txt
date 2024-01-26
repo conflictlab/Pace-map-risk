@@ -1,0 +1,12 @@
+Fiona==1.8.22
+geopandas==0.10.2
+matplotlib==3.5.0
+numpy==1.22.3
+pandas==1.4.0
+plotly==5.11.0
+python_dateutil==2.8.2
+reportlab==4.0.7
+setuptools==65.5.1
+seaborn==0.11.0
+Shapely==1.8.4
+dtaidistance==2.3.4

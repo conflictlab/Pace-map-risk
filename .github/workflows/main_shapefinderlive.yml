@@ -12,57 +12,34 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python version
-        uses: actions/setup-python@v1
-        with:
-          python-version: '3.8'
-
-      - name: Create and start virtual environment
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
-      - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
-
-      - name: Upload artifact for deployment jobs
-        uses: actions/upload-artifact@v3
-        with:
-          name: python-app
-          path: |
-            release.zip
-            !venv/
-
   deploy:
+    name: Deploying Risk Map
     runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-
+    if: "contains(github.event.head_commit.message, 'bump version')"
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v3
-        with:
-          name: python-app
+      - name: Checkout
+        uses: actions/checkout@v2
 
-      - name: Unzip artifact for deployment
-        run: unzip release.zip
-
-      - name: 'Deploy to Azure Web App'
-        uses: azure/webapps-deploy@v2
-        id: deploy-to-webapp
+      # Build and push image to Google Container Registry
+      - name: Setting up
+        uses: google-github-actions/setup-gcloud@master
         with:
-          app-name: 'ShapeFinderLive'
-          slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_29978679EC9D47CDBC650253324564CA }}
+          version: '286.0.0'
+          service_account_key: ${{ secrets.GCP_SA_KEY_JSON }}
+          service_account_email: github-actions@pace-risk-map.iam.gserviceaccount.com
+          project_id: pace-risk-map
+
+      - name: Building (🏗)
+        run: |-
+          gcloud builds submit \
+            --tag gcr.io/pace-risk-map/pace-risk-map
+
+      # Setup gcloud CLI
+      - name: Deploy (🚀)
+        uses: google-github-actions/deploy-cloudrun@main
+        with:
+          service: SERVICE_ID
+          image: gcr.io/pace-risk-map/pace-risk-map
+          region: us-east1
+          credentials: ${{ secrets.GCP_SA_KEY_JSON }}
+          project_id: pace-risk-map

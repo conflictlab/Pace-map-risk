@@ -38,7 +38,7 @@ jobs:
 
       # Setup gcloud CLI
       - name: Deploy (🚀)
-        uses: google-github-actions/deploy-cloudrun@main
+        uses: google-github-actions/deploy-cloudrun@v1
         with:
           service:  pace-risk-map
           image: gcr.io/pace-risk-map/pace-risk-map

@@ -464,5 +464,5 @@ webapp.layout = html.Div([
 ])
 
 if __name__ == '__main__':
-    webapp.run_server()
+    webapp.run_server(debug=False,host='0.0.0.0',port=8080)
     

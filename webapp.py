@@ -459,8 +459,12 @@ def display_page(pathname):
     
 
 webapp.layout = html.Div([
+    dcc.Loading(
+        id="loading-3",
+    children=[
     dcc.Location(id='url', refresh=False),
     html.Div(id='page-content')
+    ],type="dot",fullscreen=True,color="#df2226")
 ])
 
 if __name__ == '__main__':

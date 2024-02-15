@@ -59,91 +59,90 @@ config = {'displayModeBar': False}
 webapp.layout = html.Div([
     html.Div([
         dbc.Container([
-            dbc.Row([
-                dbc.Col(html.Div([
-                    html.H2(title_text, style={'textAlign': 'left', 'width': '80%'}),
-                    dbc.Nav([
-                        dbc.NavLink("Interactive Map", id='hidden_but', href="https://pace-risk-map-x35exdywcq-ue.a.run.app/",
-                                    style={'color': '#555', 'display': 'none'}),
-                        dbc.NavLink("The Team", href="https://paceconflictlab.wixsite.com/conflict-research-la/team-4",
-                                    style={'color': '#555'}),
-                        dbc.NavLink("Contact", href="mailto:schincat@tcd.ie", style={'color': '#555'})
-                    ]),
-                ]), lg=12, md=12, sm=12)
-            ], style={'backgroundColor': '#D3D3D3', 'padding': '8px', 'marginBottom': '2vh'})
+                dbc.Row([
+                    dbc.Col(html.Div([
+                        html.H2(title_text, style={'textAlign': 'left','width':'80%'}),
+                        dbc.Nav([
+                            dbc.NavLink("Interactive Map",id='hidden_but',href="https://pace-risk-map-x35exdywcq-ue.a.run.app/", style={'color': '#555','display':'none'}),
+                            dbc.NavLink("The Team", href="https://paceconflictlab.wixsite.com/conflict-research-la/team-4", style={'color': '#555'}),
+                            dbc.NavLink("Contact", href="mailto:schincat@tcd.ie", style={'color': '#555'})
+                        ]),
+                    ]), lg=12, md=12, sm=12)
+                ], style={'backgroundColor': '#D3D3D3', 'padding': '8px', 'marginBottom': '2vh'})
         ], fluid=True),
         html.Div([
-            html.A(html.Img(src='../PaCE_final_icon.png', style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://paceconflictlab.wixsite.com/conflict-research-la'),
-            html.A(html.Img(src='../github-mark.png', style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://github.com/ThomasSchinca/shapefinder_live'),
-            html.A(html.Img(src='../x_logo.png', style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://twitter.com/LabConflict')
+            html.A(html.Img(src='data:image/png;base64,{}'.format(pace_png), style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://paceconflictlab.wixsite.com/conflict-research-la'),
+            html.A(html.Img(src='data:image/png;base64,{}'.format(git_png), style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://github.com/ThomasSchinca/shapefinder_live'),
+            html.A(html.Img(src='data:image/png;base64,{}'.format(x_logo), style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://twitter.com/LabConflict')
         ], style={'position': 'absolute', 'right': '3vw', 'top': '1vh'}),
-        dbc.Container(fluid=True, children=[
-            dbc.Row([
-                html.H3('Fatalities Risk Map',
-                        style={'marginBottom': '5vh', 'marginTop': '2vh', 'textAlign': 'center'})
+    dbc.Container(fluid=True, children=[
+        dbc.Row([
+            html.H3('Fatalities Risk Map',style= {'marginBottom': '5vh','marginTop':'2vh','textAlign': 'center'})
             ]),
-            dbc.Row([
-                dbc.Col(dcc.Markdown('''Our Global Risk Prediction Map identifies countries with similar past experiences in conflict-related
-                fatalities. By analyzing historical data patterns, this approach forecasts future trends and highlights
-                nations with comparable conflict trajectories.'''),
-                        width=12, style={'marginLeft': '5vw', 'width': '90vw'}, id='parag')
-            ]),
-
-            dbc.Row([html.Div(html.Img(src='../Images/map.png', style={'width': '80%'}), style={'text-align': 'center'})]),
-            dbc.Row([
-                html.H3('Global expected Fatalities', style={'marginBottom': '5vh', 'marginTop': '15vh', 'textAlign': 'center'})
-            ]),
-            dbc.Row([html.Div(html.Img(src='../Images/sub1_1.png', style={'width': '80%'}), style={'text-align': 'center'})]),
-            dbc.Row([
-                html.H3('Higher risk - Individual Cases',
-                        style={'marginBottom': '5vh', 'marginTop': '15vh', 'textAlign': 'center'})
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.H5(first, style={'textAlign': 'center', 'color': "#df2226"}),
-                    html.Div(html.Img(src='../Images/ex1.png', style={'height': '50vh'}), style={'text-align': 'center'})
-                ], style={'marginLeft': '10vw', 'width': '40vw'}),
-                dbc.Col([
-                    html.Div(html.Img(src='../Images/ex1_sce.png', style={'height': '50vh'}), style={'text-align': 'center'})
-                ], style={'marginLeft': '5vw', 'width': '15vw'}),
-                dbc.Col([
-                    dcc.Markdown(f'Decrease -  pr={perc.iloc[0]}%', style={'marginTop': '5vh', 'color': '#D6888D'}),
-                    dcc.Markdown(f"Stable - pr={perc.iloc[1]}%", style={'marginTop': '15vh', 'color': 'orangered'}),
-                    dcc.Markdown(f"Increase - pr={perc.iloc[2]}%", style={'marginTop': '15vh', 'color': 'darkred'}),
-                ], style={'marginLeft': '1vw', 'width': '15vw'})
-            ], style={'marginBottom': '10vh'}),
-            dbc.Row([
-                dbc.Col([
-                    html.H5(second, style={'textAlign': 'center', 'color': "#df2226"}),
-                    html.Div(html.Img(src='../Images/ex2.png', style={'height': '50vh'}), style={'text-align': 'center'})
-                ], style={'marginLeft': '10vw', 'width': '40vw'}),
-                dbc.Col([
-                    html.Div(html.Img(src='../Images/ex2_sce.png', style={'height': '50vh'}), style={'text-align': 'center'})
-                ], style={'marginLeft': '5vw', 'width': '15vw'}),
-                dbc.Col([
-                    dcc.Markdown(f'Decrease -  pr={perc2.iloc[0]}%', style={'marginTop': '5vh', 'color': '#D6888D'}),
-                    dcc.Markdown(f"Stable - pr={perc2.iloc[1]}%", style={'marginTop': '15vh', 'color': 'orangered'}),
-                    dcc.Markdown(f"Increase - pr={perc2.iloc[2]}%", style={'marginTop': '15vh', 'color': 'darkred'}),
-                ], style={'marginLeft': '1vw', 'width': '15vw'})
-            ], style={'marginBottom': '10vh'}),
-
-            dbc.Row([
-                dbc.Col([
-                    html.H5(third, style={'textAlign': 'center', 'color': "#df2226"}),
-                    html.Div(html.Img(src='../Images/ex3.png', style={'height': '50vh'}), style={'text-align': 'center'})
-                ], style={'marginLeft': '10vw', 'width': '40vw'}),
-                dbc.Col([
-                    html.Div(html.Img(src='../Images/ex3_sce.png', style={'height': '50vh'}), style={'text-align': 'center'})
-                ], style={'marginLeft': '5vw', 'width': '15vw'}),
-                dbc.Col([
-                    dcc.Markdown(f'Decrease -  pr={perc3.iloc[0]}%', style={'marginTop': '5vh', 'color': '#D6888D'}),
-                    dcc.Markdown(f"Stable - pr={perc3.iloc[1]}%", style={'marginTop': '15vh', 'color': 'orangered'}),
-                    dcc.Markdown(f"Increase - pr={perc3.iloc[2]}%", style={'marginTop': '15vh', 'color': 'darkred'}),
-                ], style={'marginLeft': '1vw', 'width': '15vw'})
-            ], style={'marginBottom': '5vh'}),
-
+        dbc.Row([
+            dbc.Col(dcc.Markdown('''Our Global Risk Prediction Map identifies countries with similar past experiences in conflict-related
+fatalities. By analyzing historical data patterns, this approach forecasts future trends and highlights
+nations with comparable conflict trajectories.'''), 
+                    width=12, style={'marginLeft': '5vw', 'width': '90vw'},id='parag')
         ]),
-    ]), 
+        
+        dbc.Row([html.Div(html.Img(src='data:image/png;base64,{}'.format(map_image_path), style={'width': '80%'}), style={'text-align': 'center'})]),
+        dbc.Row([
+               html.H3('Global expected Fatalities',style={'marginBottom': '5vh','marginTop': '15vh','textAlign': 'center'})
+               ]),     
+        dbc.Row([html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image1), style={'width': '80%'}), style={'text-align': 'center'})]),
+        dbc.Row([
+               html.H3('Higher risk - Individual Cases',style={'marginBottom': '5vh','marginTop': '15vh','textAlign': 'center'})
+               ]),  
+        dbc.Row([
+                dbc.Col([
+                    html.H5(first,style={'textAlign': 'center','color':"#df2226"}),
+                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image2), style={'height':'50vh'}), style={'text-align': 'center'})
+                    ],style={'marginLeft': '10vw','width':'40vw'}),
+                dbc.Col([
+                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image3), style={'height':'50vh'}), style={'text-align': 'center'})
+                    ],style={'marginLeft': '5vw','width':'15vw'}),
+                    dbc.Col([
+                        dcc.Markdown(f'Decrease -  pr={perc.iloc[0]}%',style={'marginTop': '5vh','color': '#D6888D'}),
+                        dcc.Markdown(f"Stable - pr={perc.iloc[1]}%",style={'marginTop': '15vh','color': 'orangered'}),
+                        dcc.Markdown(f"Increase - pr={perc.iloc[2]}%",style={'marginTop': '15vh','color': 'darkred'}),
+                        ],style={'marginLeft': '1vw','width':'15vw'})
+                ],style={'marginBottom': '10vh'}),
+        dbc.Row([
+                dbc.Col([
+                    html.H5(second,style={'textAlign': 'center','color':"#df2226"}),
+                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image4), style={'height':'50vh'}), style={'text-align': 'center'})
+                    ],style={'marginLeft': '10vw','width':'40vw'}),
+                dbc.Col([
+                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image5), style={'height':'50vh'}), style={'text-align': 'center'})
+                    ],style={'marginLeft': '5vw','width':'15vw'}),
+                    dbc.Col([
+                        dcc.Markdown(f'Decrease -  pr={perc2.iloc[0]}%',style={'marginTop': '5vh','color': '#D6888D'}),
+                        dcc.Markdown(f"Stable - pr={perc2.iloc[1]}%",style={'marginTop': '15vh','color': 'orangered'}),
+                        dcc.Markdown(f"Increase - pr={perc2.iloc[2]}%",style={'marginTop': '15vh','color': 'darkred'}),
+                        ],style={'marginLeft': '1vw','width':'15vw'})
+                ],style={'marginBottom': '10vh'}),
+        
+        dbc.Row([
+                dbc.Col([
+                    html.H5(third,style={'textAlign': 'center','color':"#df2226"}),
+                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image6), style={'height':'50vh'}), style={'text-align': 'center'})
+                    ],style={'marginLeft': '10vw','width':'40vw'}),
+                dbc.Col([
+                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image7), style={'height':'50vh'}), style={'text-align': 'center'})
+                    ],style={'marginLeft': '5vw','width':'15vw'}),
+                    dbc.Col([
+                        dcc.Markdown(f'Decrease -  pr={perc3.iloc[0]}%',style={'marginTop': '5vh','color': '#D6888D'}),
+                        dcc.Markdown(f"Stable - pr={perc3.iloc[1]}%",style={'marginTop': '15vh','color': 'orangered'}),
+                        dcc.Markdown(f"Increase - pr={perc3.iloc[2]}%",style={'marginTop': '15vh','color': 'darkred'}),
+                        ],style={'marginLeft': '1vw','width':'15vw'})
+                ],style={'marginBottom': '5vh'}),
+        
+        
+        
+        
+        ]),  
+    ]),
     html.Div([
         html.H1("About", style={'marginBottom':'5vh','marginTop':'10vh','textAlign': 'center'}),
         html.H3("Overview"),
@@ -190,6 +189,7 @@ webapp.layout = html.Div([
         html.Div(html.Img(src='data:image/gif;base64,{}'.format(gif_dtw), style={'width': '80%'}), style={'text-align': 'center'})
     ],style={'marginLeft':50})
 ])
+
 
 if __name__ == '__main__':
     webapp.run_server(debug=False)#,host='0.0.0.0',port=8080)

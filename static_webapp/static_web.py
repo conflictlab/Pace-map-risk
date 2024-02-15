@@ -9,6 +9,7 @@ import pandas as pd
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import base64
+from dash_renderer import Exporter
 
 # Define the path for the new PDF and the uploaded image
 
@@ -31,9 +32,6 @@ sub_image4 = base64.b64encode(open('../Images/ex2.png', 'rb').read()).decode('as
 sub_image5 = base64.b64encode(open('../Images/ex2_sce.png', 'rb').read()).decode('ascii')
 sub_image6 = base64.b64encode(open('../Images/ex3.png', 'rb').read()).decode('ascii')
 sub_image7 = base64.b64encode(open('../Images/ex3_sce.png', 'rb').read()).decode('ascii')
-
-
-
 
 
 
@@ -192,6 +190,8 @@ nations with comparable conflict trajectories.'''),
         html.Div(html.Img(src='data:image/gif;base64,{}'.format(gif_dtw), style={'width': '80%'}), style={'text-align': 'center'})
     ],style={'marginLeft':50})
 ])
+
+exporter = Exporter(app)
 
 
 if __name__ == '__main__':

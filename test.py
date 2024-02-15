@@ -255,6 +255,7 @@ cbar.set_ticklabels(['1']+[f'$10^{e}$' for e in range(1,math.ceil(max(world['log
 plt.text(1.9,1.5,'Risk index', fontsize=30)
 plt.text(-8.5,0.1,'The risk index corresponds to the log sum of predicted fatalities in the next 6 months.',color='dimgray', fontdict={'style': 'italic'})
 plt.savefig('Images/map.png', bbox_inches='tight')
+plt.savefig('docs/Images/map.png', bbox_inches='tight')
 plt.show()
 
 # =============================================================================
@@ -275,6 +276,7 @@ plt.yticks(fontsize=16)
 plt.box(False)
 plt.xticks(rotation=45, ha='right')
 plt.savefig('Images/sub1_1.png', bbox_inches='tight')
+plt.savefig('docs/Images/sub1_1.png', bbox_inches='tight')
 plt.show()
 
 # =============================================================================
@@ -467,6 +469,7 @@ plt.yticks(fontsize=20)
 plt.box(False)
 plt.xticks(rotation=45, ha='right')
 plt.savefig('Images/ex1.png', bbox_inches='tight')
+plt.savefig('docs/Images/ex1.png', bbox_inches='tight')
 plt.show()
 
 plt.figure(figsize=(15, 9))
@@ -511,6 +514,7 @@ for k in range(3):
 
 plt.tight_layout()
 plt.savefig('Images/ex1_sce.png', bbox_inches='tight')
+plt.savefig('docs/Images/ex1_sce.png', bbox_inches='tight')
 plt.show()
     
 #     pred_ori= seq_pred.iloc[k,:]*(find.sequences[k][0].max()-find.sequences[k][0].min())+find.sequences[k][0].min()
@@ -612,6 +616,7 @@ for coun in range(2,5):
     plt.box(False)
     plt.xticks(rotation=45, ha='right')
     plt.savefig(f'Images/ex{coun}.png', bbox_inches='tight')
+    plt.savefig(f'docs/Images/ex{coun}.png', bbox_inches='tight')
     plt.show()
     
     fig, axs = plt.subplots(3, 1, figsize=(10, 15))
@@ -630,6 +635,7 @@ for coun in range(2,5):
             axs[k].set_xticks([])
     plt.tight_layout()
     plt.savefig(f'Images/ex{coun}_sce.png', bbox_inches='tight')
+    plt.savefig(f'docs/Images/ex{coun}_sce.png', bbox_inches='tight')
     plt.show()
     
 indo=[]

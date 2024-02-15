@@ -86,7 +86,7 @@ nations with comparable conflict trajectories.'''),
                     width=12, style={'marginLeft': '5vw', 'width': '90vw'},id='parag')
         ]),
         
-        dbc.Row([html.Div(html.Img(src='data:image/png;base64,{}'.format(map_image_path), style={'width': '80%'}), style={'text-align': 'center'})]),
+        dbc.Row([html.Div(html.Img(src='Images/map.jpeg', style={'width': '80%'}), style={'text-align': 'center'})]),
         dbc.Row([
                html.H3('Global expected Fatalities',style={'marginBottom': '5vh','marginTop': '15vh','textAlign': 'center'})
                ]),     

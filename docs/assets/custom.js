@@ -1,12 +1,13 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Wait for 5 seconds after the page is fully loaded before showing the popup
-    setTimeout(function() {
-        var userResponse = confirm("Would you like to see the Interactive Map ?");
-        if (userResponse) {
-            // User clicked "OK"; redirect them to Google
-            window.location.href = "https://pace-risk-map-x35exdywcq-ue.a.run.app/";
-        }
-    }, 30000); // 5000 milliseconds = 5 seconds
+document.addEventListener('DOMContentLoaded', function () {
+    // Wait for 5 seconds after the page is fully loaded before showing the modal
+    setTimeout(function () {
+        var myModal = new bootstrap.Modal(document.getElementById('myModal'), {
+            keyboard: false,
+            backdrop: 'static'
+        });
+
+        myModal.show();
+    }, 5000); // 5000 milliseconds = 5 seconds
 });
 
 

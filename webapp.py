@@ -146,7 +146,7 @@ home_layout = html.Div([
                     dbc.Col(html.Div([
                         html.H2("Fatalities Risk Map", style={'textAlign': 'left','width':'80%'}),
                         dbc.Nav([
-                            dbc.NavLink("Try The Model", href="https://shapefinder.azurewebsites.net/", style={'color': '#555'}),
+                            #dbc.NavLink("Try The Model", href="https://shapefinder.azurewebsites.net/", style={'color': '#555'}),
                             dbc.NavLink("Monthly Report", href="/report", style={'color': '#555'}),
                             dbc.NavLink("About", href="/about", style={'color': '#555'}),
                             dbc.NavLink("The Team", href="https://paceconflictlab.wixsite.com/conflict-research-la/team-4", style={'color': '#555'}),

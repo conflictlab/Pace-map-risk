@@ -395,10 +395,8 @@ ax.tick_params(bottom=False, left=False)
 ax.set_axisbelow(True)
 ax.yaxis.grid(True, color='#EEEEEE')
 ax.xaxis.grid(False)
-#plt.xlabel('Country', fontsize=20)
 plt.xlabel('')
 plt.ylabel('')
-#plt.title('Most risky countries (log scale)', fontsize=16)
 plt.yscale('log')
 plt.xticks(fontsize=16)  # Set x-axis tick font size
 plt.yticks(fontsize=16)
@@ -487,7 +485,7 @@ plt.xticks(fontsize=20)  # Set x-axis tick font size
 plt.yticks(fontsize=20)
 plt.box(False)
 plt.xticks(rotation=45, ha='right')
-plt.title(str(df_best.iloc[-1][0]),color='darkred',fontsize=30)
+plt.title(str(df_best.iloc[-1][0]),color='red',fontsize=30)
 plt.savefig('docs/Images/ex1.png', bbox_inches='tight')
 plt.show()
 
@@ -533,9 +531,33 @@ for k in range(3):
 
 plt.tight_layout()
 plt.savefig('Images/ex1_sce.png', bbox_inches='tight')
+#plt.savefig('docs/Images/ex1_sce.png', bbox_inches='tight')
+plt.show()
+    
+fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+for k in range(3):
+    axs[k].plot(df_next[k].iloc[:, i], color='black', linewidth=3)
+    axs[k].plot(df_next[k].iloc[-7:, i], color=col[k], linewidth=8)
+    axs[k].plot(df_next[k].iloc[-6:, i], color=col[k], marker='o', linewidth=0)
+    axs[k].set_frame_on(False)
+    axs[k].grid(axis='y', linestyle='--', alpha=0.7)
+    axs[k].tick_params(axis='y', labelsize=30)
+    axs[k].set_xticks([])
+plt.tight_layout()
 plt.savefig('docs/Images/ex1_sce.png', bbox_inches='tight')
 plt.show()
     
+
+fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+for k in range(3):
+    axs[k].text(0.2,0.5, s=f"{name_sc[k]} - pr ={df_perc.iloc[k, i]}", color=col[k],fontsize=40)
+    axs[k].set_frame_on(False)
+    axs[k].set_xticks([])
+    axs[k].set_yticks([])
+plt.tight_layout()
+plt.savefig('docs/Images/ex1_sce_p.png', bbox_inches='tight')
+plt.show()
+
 
 for coun in range(2,5):
     h_train=10
@@ -597,7 +619,7 @@ for coun in range(2,5):
     plt.yticks(fontsize=20)
     plt.box(False)
     plt.xticks(rotation=45, ha='right')
-    plt.title()
+    plt.title(str(df_best.iloc[-coun][0]),color='red',fontsize=30)
     plt.savefig(f'docs/Images/ex{coun}.png', bbox_inches='tight')
     plt.show()
     
@@ -634,10 +656,18 @@ for coun in range(2,5):
             axs[k].tick_params(axis='y', labelsize=30)
             axs[k].set_xticks([])
     plt.tight_layout()
-    plt.title(str(df_best.iloc[-coun][0]),color='darkred',fontsize=30)
     plt.savefig(f'docs/Images/ex{coun}_sce.png', bbox_inches='tight')
     plt.show()
     
+    fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+    for k in range(3):
+        axs[k].text(0.2,0.5, s=f"{name_sc[k]} - pr ={df_perc.iloc[:, i].loc[k]}", color=col[k],fontsize=40)
+        axs[k].set_frame_on(False)
+        axs[k].set_xticks([])
+        axs[k].set_yticks([])
+    plt.tight_layout()
+    plt.savefig(f'docs/Images/ex{coun}_sce_p.png', bbox_inches='tight')
+    plt.show()
     
     
     

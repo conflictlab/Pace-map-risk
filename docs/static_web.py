@@ -8,43 +8,10 @@ import dash
 import pandas as pd
 from dash import html, dcc
 import dash_bootstrap_components as dbc
-import base64
 
 # Define the path for the new PDF and the uploaded image
 
 title_text = 'Patterns of Conflict'
-
-pace_png = base64.b64encode(open('../PaCE_final_icon.png', 'rb').read()).decode('ascii')
-git_png = base64.b64encode(open('../github-mark.png', 'rb').read()).decode('ascii')
-x_logo = base64.b64encode(open('../x_logo.png', 'rb').read()).decode('ascii')
-gif_fo = base64.b64encode(open('../Images/explic.gif', 'rb').read()).decode('ascii')
-gif_dtw = base64.b64encode(open('../Images/dtw.gif', 'rb').read()).decode('ascii')
-ab1 = base64.b64encode(open('../Images/about_1.png', 'rb').read()).decode('ascii')
-ab2 = base64.b64encode(open('../Images/about_2.png', 'rb').read()).decode('ascii')
-ab3 = base64.b64encode(open('../Images/about_3.png', 'rb').read()).decode('ascii')
-ab4 = base64.b64encode(open('../Images/about_4.png', 'rb').read()).decode('ascii')
-map_image_path = base64.b64encode(open('../Images/map.png', 'rb').read()).decode('ascii')
-sub_image1 = base64.b64encode(open('../Images/sub1_1.png', 'rb').read()).decode('ascii')
-sub_image2 = base64.b64encode(open('../Images/ex1.png', 'rb').read()).decode('ascii')
-sub_image3 = base64.b64encode(open('../Images/ex1_sce.png', 'rb').read()).decode('ascii')
-sub_image4 = base64.b64encode(open('../Images/ex2.png', 'rb').read()).decode('ascii')
-sub_image5 = base64.b64encode(open('../Images/ex2_sce.png', 'rb').read()).decode('ascii')
-sub_image6 = base64.b64encode(open('../Images/ex3.png', 'rb').read()).decode('ascii')
-sub_image7 = base64.b64encode(open('../Images/ex3_sce.png', 'rb').read()).decode('ascii')
-
-
-
-df_best = pd.read_csv('../best.csv',index_col=0)
-df_perc = pd.read_csv('../perc.csv',parse_dates=True,index_col=(0))
-perc = df_perc.iloc[:,df_best.iloc[-1][1]]
-perc2 = df_perc.iloc[:,df_best.iloc[-2][1]]
-perc3 = df_perc.iloc[:,df_best.iloc[-3][1]]
-first = df_best.iloc[-1][0]
-first = f'{first}'
-second = df_best.iloc[-2][0]
-second = f'{second}'
-third = df_best.iloc[-3][0]
-third = f'{third}'
 
 webapp = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.LUX],
                     meta_tags=[{'name': 'viewport',
@@ -53,7 +20,6 @@ webapp.title = 'Pace Risk Map'
 webapp._favicon = ("icone_pace.ico")
 server = webapp.server
 config = {'displayModeBar': False}
-
 
 # App layout
 webapp.layout = html.Div([
@@ -71,9 +37,9 @@ webapp.layout = html.Div([
                 ], style={'backgroundColor': '#D3D3D3', 'padding': '8px', 'marginBottom': '2vh'})
         ], fluid=True),
         html.Div([
-            html.A(html.Img(src='data:image/png;base64,{}'.format(pace_png), style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://paceconflictlab.wixsite.com/conflict-research-la'),
-            html.A(html.Img(src='data:image/png;base64,{}'.format(git_png), style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://github.com/ThomasSchinca/shapefinder_live'),
-            html.A(html.Img(src='data:image/png;base64,{}'.format(x_logo), style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://twitter.com/LabConflict')
+            html.A(html.Img(src='Images/PaCE_final_icon.png', style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://paceconflictlab.wixsite.com/conflict-research-la'),
+            html.A(html.Img(src='Images/github-mark.png', style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://github.com/ThomasSchinca/shapefinder_live'),
+            html.A(html.Img(src='Images/x_logo.png', style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://twitter.com/LabConflict')
         ], style={'position': 'absolute', 'right': '3vw', 'top': '1vh'}),
     dbc.Container(fluid=True, children=[
         dbc.Row([
@@ -86,61 +52,48 @@ nations with comparable conflict trajectories.'''),
                     width=12, style={'marginLeft': '5vw', 'width': '90vw'},id='parag')
         ]),
         
-        dbc.Row([html.Div(html.Img(src='Images/map.jpeg', style={'width': '80%'}), style={'text-align': 'center'})]),
+        dbc.Row([html.Div(html.Img(src='Images/map.png', style={'width': '80%'}), style={'text-align': 'center'})]),
         dbc.Row([
                html.H3('Global expected Fatalities',style={'marginBottom': '5vh','marginTop': '15vh','textAlign': 'center'})
                ]),     
-        dbc.Row([html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image1), style={'width': '80%'}), style={'text-align': 'center'})]),
+        dbc.Row([html.Div(html.Img(src='Images/sub1_1.png', style={'width': '80%'}), style={'text-align': 'center'})]),
         dbc.Row([
                html.H3('Higher risk - Individual Cases',style={'marginBottom': '5vh','marginTop': '15vh','textAlign': 'center'})
                ]),  
         dbc.Row([
                 dbc.Col([
-                    html.H5(first,style={'textAlign': 'center','color':"#df2226"}),
-                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image2), style={'height':'50vh'}), style={'text-align': 'center'})
+                    html.Div(html.Img(src='Images/ex1.png', style={'height':'50vh'}), style={'text-align': 'center'})
                     ],style={'marginLeft': '10vw','width':'40vw'}),
                 dbc.Col([
-                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image3), style={'height':'50vh'}), style={'text-align': 'center'})
+                    html.Div(html.Img(src='Images/ex1_sce.png', style={'height':'50vh'}), style={'text-align': 'center'})
                     ],style={'marginLeft': '5vw','width':'15vw'}),
                     dbc.Col([
-                        dcc.Markdown(f'Decrease -  pr={perc.iloc[0]}%',style={'marginTop': '5vh','color': '#D6888D'}),
-                        dcc.Markdown(f"Stable - pr={perc.iloc[1]}%",style={'marginTop': '15vh','color': 'orangered'}),
-                        dcc.Markdown(f"Increase - pr={perc.iloc[2]}%",style={'marginTop': '15vh','color': 'darkred'}),
+                        html.Div(html.Img(src='Images/ex1_sce_p.png', style={'height':'50vh'}), style={'text-align': 'center'})
                         ],style={'marginLeft': '1vw','width':'15vw'})
                 ],style={'marginBottom': '10vh'}),
         dbc.Row([
                 dbc.Col([
-                    html.H5(second,style={'textAlign': 'center','color':"#df2226"}),
-                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image4), style={'height':'50vh'}), style={'text-align': 'center'})
+                    html.Div(html.Img(src='Images/ex2.png', style={'height':'50vh'}), style={'text-align': 'center'})
                     ],style={'marginLeft': '10vw','width':'40vw'}),
                 dbc.Col([
-                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image5), style={'height':'50vh'}), style={'text-align': 'center'})
+                    html.Div(html.Img(src='Images/ex2_sce.png', style={'height':'50vh'}), style={'text-align': 'center'})
                     ],style={'marginLeft': '5vw','width':'15vw'}),
                     dbc.Col([
-                        dcc.Markdown(f'Decrease -  pr={perc2.iloc[0]}%',style={'marginTop': '5vh','color': '#D6888D'}),
-                        dcc.Markdown(f"Stable - pr={perc2.iloc[1]}%",style={'marginTop': '15vh','color': 'orangered'}),
-                        dcc.Markdown(f"Increase - pr={perc2.iloc[2]}%",style={'marginTop': '15vh','color': 'darkred'}),
+                        html.Div(html.Img(src='Images/ex2_sce_p.png', style={'height':'50vh'}), style={'text-align': 'center'})
                         ],style={'marginLeft': '1vw','width':'15vw'})
                 ],style={'marginBottom': '10vh'}),
         
         dbc.Row([
                 dbc.Col([
-                    html.H5(third,style={'textAlign': 'center','color':"#df2226"}),
-                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image6), style={'height':'50vh'}), style={'text-align': 'center'})
+                    html.Div(html.Img(src='Images/ex3.png', style={'height':'50vh'}), style={'text-align': 'center'})
                     ],style={'marginLeft': '10vw','width':'40vw'}),
                 dbc.Col([
-                    html.Div(html.Img(src='data:image/png;base64,{}'.format(sub_image7), style={'height':'50vh'}), style={'text-align': 'center'})
+                    html.Div(html.Img(src='Images/ex3_sce.png', style={'height':'50vh'}), style={'text-align': 'center'})
                     ],style={'marginLeft': '5vw','width':'15vw'}),
                     dbc.Col([
-                        dcc.Markdown(f'Decrease -  pr={perc3.iloc[0]}%',style={'marginTop': '5vh','color': '#D6888D'}),
-                        dcc.Markdown(f"Stable - pr={perc3.iloc[1]}%",style={'marginTop': '15vh','color': 'orangered'}),
-                        dcc.Markdown(f"Increase - pr={perc3.iloc[2]}%",style={'marginTop': '15vh','color': 'darkred'}),
+                        html.Div(html.Img(src='Images/ex3_sce_p.png', style={'height':'50vh'}), style={'text-align': 'center'})
                         ],style={'marginLeft': '1vw','width':'15vw'})
                 ],style={'marginBottom': '5vh'}),
-        
-        
-        
-        
         ]),  
     ]),
     html.Div([
@@ -179,14 +132,14 @@ nations with comparable conflict trajectories.'''),
         html.H3("The Model",style={'marginTop':30}),
         dcc.Markdown("""
         The applied model operates by examining recent events within a country and aligning them with historical occurrences. It discerns patterns in the temporal evolution of incidents, enabling the identification of analogous scenarios from the past. This matching process contributes to a comprehensive understanding of when and where comparable situations have historically manifested. Consequently, the model plays a pivotal role in predicting the future trajectory of potential conflict-related scenarios based on these historical parallels, called ‘Past Future’."""),
-        html.Div(html.Img(src='data:image/gif;base64,{}'.format(gif_fo), style={'width': '80%'}), style={'text-align': 'center'}),
+        html.Div(html.Img(src='Images/explic.gif', style={'width': '80%'}), style={'text-align': 'center'}),
         html.H3("Find Historical Match",style={'marginTop':30}),
         dcc.Markdown("""
         To identify match in historical sequences, we employ dynamic time warping (DTW) distance. In contrast to the Euclidean distance, DTW offers greater flexibility in accommodating variations in time and window length. 
         DTW works by aligning the two sequences in a way that minimizes the total distance between corresponding points, allowing for both temporal shifts and local deformations. This alignment is achieved by warping the time axis of one sequence with respect to the other. The warping path represents the optimal alignment, and the DTW distance is the cumulative sum of the distances along this path.
         One of the key advantages of DTW is its ability to handle sequences of unequal length and to flexibly adapt to local variations in timing.
         The DTW distance is computed, and if it falls below a predefined threshold, the historical sequence is classified as a match."""),
-        html.Div(html.Img(src='data:image/gif;base64,{}'.format(gif_dtw), style={'width': '80%'}), style={'text-align': 'center'})
+        html.Div(html.Img(src='Images/dtw.gif', style={'width': '80%'}), style={'text-align': 'center'})
     ],style={'marginLeft':50})
 ])
 

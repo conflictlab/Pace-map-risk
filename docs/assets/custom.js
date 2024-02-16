@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 document.addEventListener('DOMContentLoaded', function() {
     fetch('https://pace-risk-map-x35exdywcq-ue.a.run.app/', {
-        mode: 'no-cors' // This mode allows the request to be made but does not allow access to the response.
+        mode: 'no-cors' 
     })
     },);
 

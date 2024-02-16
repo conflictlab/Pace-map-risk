@@ -460,6 +460,14 @@ while len(find.sequences)<3:
 pred_ori = find.predict(horizon=h,plot=False,mode='mean')
 seq_pred =find.predict(horizon=h,plot=False,mode='mean',seq_out=True)
 
+indo=[]
+for coun in range(1,5):
+    indo.append(df_tot_m.columns.tolist().index(df_plot.index[-coun]))
+indo.reverse()
+df_best = pd.DataFrame(df_plot.index[-4:])
+df_best['find']=indo
+df_best.to_csv('best.csv')
+
 plt.figure(figsize=(10, 6))
 plt.plot(df_tot_m.iloc[-h_train:,i], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
 plt.grid(axis='y', linestyle='--', alpha=0.7)
@@ -469,6 +477,17 @@ plt.yticks(fontsize=20)
 plt.box(False)
 plt.xticks(rotation=45, ha='right')
 plt.savefig('Images/ex1.png', bbox_inches='tight')
+plt.show()
+
+plt.figure(figsize=(10, 6))
+plt.plot(df_tot_m.iloc[-h_train:,i], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.xlabel('Date', fontsize=25)
+plt.xticks(fontsize=20)  # Set x-axis tick font size
+plt.yticks(fontsize=20)
+plt.box(False)
+plt.xticks(rotation=45, ha='right')
+plt.title(str(df_best.iloc[-1][0]),color='darkred',fontsize=30)
 plt.savefig('docs/Images/ex1.png', bbox_inches='tight')
 plt.show()
 
@@ -517,56 +536,8 @@ plt.savefig('Images/ex1_sce.png', bbox_inches='tight')
 plt.savefig('docs/Images/ex1_sce.png', bbox_inches='tight')
 plt.show()
     
-#     pred_ori= seq_pred.iloc[k,:]*(find.sequences[k][0].max()-find.sequences[k][0].min())+find.sequences[k][0].min()
-#     pred_ori =pred_ori.T
-#     pred_ori.index = pd.date_range(start=find.sequences[k][0].index[-1],periods=h+1,freq='M')[1:]
-#     historical_series = pd.concat([find.sequences[k][0],pred_ori],axis=0)
-#     date_rng = historical_series.index
-#     plt.figure(figsize=(10, 6))
-#     plt.plot(date_rng[:-h], historical_series[:-h], marker='o', color='grey', linestyle='-', linewidth=2, markersize=8)
-#     #plt.plot(date_rng[-h:], historical_series[-h:], marker='o', color='red', linestyle='-', linewidth=2, markersize=8)
-#     #plt.scatter(date_rng[-h:], historical_series[-h:], color='red', s=100, zorder=5)
-#     plt.grid(axis='y', linestyle='--', alpha=0.7)
-#     plt.xlabel('Date', fontsize=20)
-#     plt.xticks(fontsize=16)  # Set x-axis tick font size
-#     plt.yticks(fontsize=16)
-#     plt.box(False)
-#     plt.xticks(rotation=45, ha='right')
-#     plt.title(f"{find.sequences[k][0].name}\nd = {find.sequences[k][1]}", style='italic', color='grey',fontsize=20)
-#     plt.savefig(f'Images/ex1_m{k}.png', bbox_inches='tight')
-#     plt.show()    
-
-# series_names, values = zip(*find.sequences)
-# name_barh=[]
-# for i in find.sequences:
-#     name_barh.append(str(i[0].name)+': '+str(i[0].index[0].month)+'-'+str(i[0].index[0].year))
-# values=values[:10]
-# name_barh=name_barh[:10]
-# fig, ax = plt.subplots()
-# bars = ax.barh(name_barh, values, color='gray', edgecolor='none')
-# ax.set_frame_on(False)
-# ax.grid(False)
-# for bar, value in zip(bars, values):
-#     ax.text(value+0.1*value, bar.get_y() + bar.get_height() / 2, f'{value:.2f}',
-#             va='center', ha='center', color='gray', fontsize=15)
-# ax.set_xlabel('Distance',fontsize=16)
-# ax.xaxis.set_visible(False)
-# ax.tick_params(axis='y', which='major', labelsize=15)
-# plt.savefig('Images/ex1_barh.png', bbox_inches='tight')
-# plt.show()
-
-
-
-
-
-
-
-
-
-
 
 for coun in range(2,5):
-
     h_train=10
     h=6
     pred_tot=[]
@@ -616,6 +587,17 @@ for coun in range(2,5):
     plt.box(False)
     plt.xticks(rotation=45, ha='right')
     plt.savefig(f'Images/ex{coun}.png', bbox_inches='tight')
+    plt.show()
+    
+    plt.figure(figsize=(10, 6))
+    plt.plot(df_tot_m.iloc[-h_train:,i], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.xlabel('Date', fontsize=25)
+    plt.xticks(fontsize=20)  # Set x-axis tick font size
+    plt.yticks(fontsize=20)
+    plt.box(False)
+    plt.xticks(rotation=45, ha='right')
+    plt.title()
     plt.savefig(f'docs/Images/ex{coun}.png', bbox_inches='tight')
     plt.show()
     
@@ -635,16 +617,31 @@ for coun in range(2,5):
             axs[k].set_xticks([])
     plt.tight_layout()
     plt.savefig(f'Images/ex{coun}_sce.png', bbox_inches='tight')
+    plt.show()
+    
+    fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+    for k in range(3):
+        if df_next[k].iloc[:, i].isna().all() :
+            axs[k].set_frame_on(False)
+            axs[k].set_xticks([])
+            axs[k].set_yticks([])
+        else:
+            axs[k].plot(df_next[k].iloc[:, i], color='black', linewidth=3)
+            axs[k].plot(df_next[k].iloc[-7:, i], color=col[k], linewidth=8)
+            axs[k].plot(df_next[k].iloc[-6:, i], color=col[k], marker='o', linewidth=0)
+            axs[k].set_frame_on(False)
+            axs[k].grid(axis='y', linestyle='--', alpha=0.7)
+            axs[k].tick_params(axis='y', labelsize=30)
+            axs[k].set_xticks([])
+    plt.tight_layout()
+    plt.title(str(df_best.iloc[-coun][0]),color='darkred',fontsize=30)
     plt.savefig(f'docs/Images/ex{coun}_sce.png', bbox_inches='tight')
     plt.show()
     
-indo=[]
-for coun in range(1,5):
-    indo.append(df_tot_m.columns.tolist().index(df_plot.index[-coun]))
-indo.reverse()
-df_best = pd.DataFrame(df_plot.index[-4:])
-df_best['find']=indo
-df_best.to_csv('best.csv')
+    
+    
+    
+
 
 
 

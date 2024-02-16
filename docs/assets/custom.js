@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         myModal.show();
-    }, 5000); // 5000 milliseconds = 5 seconds
+    }, 30000); // 5000 milliseconds = 5 seconds
 });
 
 

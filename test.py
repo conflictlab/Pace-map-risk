@@ -638,6 +638,7 @@ for coun in range(2,5):
             axs[k].tick_params(axis='y', labelsize=30)
             axs[k].set_xticks([])
     plt.tight_layout()
+    plt.savefig(f'docs/Images/ex{coun}_sce.png', bbox_inches='tight')
     plt.savefig(f'Images/ex{coun}_sce.png', bbox_inches='tight')
     plt.show()
     
@@ -656,7 +657,7 @@ for coun in range(2,5):
             axs[k].tick_params(axis='y', labelsize=30)
             axs[k].set_xticks([])
     plt.tight_layout()
-    plt.savefig(f'docs/Images/ex{coun}_sce.png', bbox_inches='tight')
+    
     plt.show()
     
     fig, axs = plt.subplots(3, 1, figsize=(10, 15))

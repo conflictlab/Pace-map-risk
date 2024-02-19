@@ -1,17 +1,17 @@
 @media only screen and (orientation: portrait) {
     .sub1 {
         margin-left: 5vw;
-        width: 35vw; 
-        height: 25vh;
+        width: 30vw; 
+        height: 15vh;
     }
     .sub2 {
         margin-left: 1vw;
-        width: 15vw; 
-        height: 25vh;
+        width: 25vw; 
+        height: 15vh;
     }
     .sub3{
         width: 15vw;
-        height: 25vh;
+        height: 15vh;
         margin-left:1vw;
     }
 }
@@ -19,12 +19,12 @@
 @media only screen and (orientation: landscape) {
     .sub1{
         margin-left: 10vw;
-        width: 40vw; 
+        width: 30vw; 
         height: 50vh;
     }
     .sub2 {
         margin-left: 5vw;
-        width: 15vw; 
+        width: 25vw; 
         height: 50vh;
     }
     .sub3{

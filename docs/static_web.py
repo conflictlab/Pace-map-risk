@@ -62,37 +62,37 @@ nations with comparable conflict trajectories.'''),
                ]),  
         dbc.Row([
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex1.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                    ],style={'marginLeft': '10vw','width':'40vw'}),
+                    html.Div(html.Img(src='Images/ex1.png'), style={'text-align': 'center'})
+                    ],className='sub1'),
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex1_sce.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                    ],style={'marginLeft': '5vw','width':'15vw'}),
+                    html.Div(html.Img(src='Images/ex1_sce.png'), style={'text-align': 'center'})
+                    ],className='sub2'),
                     dbc.Col([
-                        html.Div(html.Img(src='Images/ex1_sce_p.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                        ],style={'marginLeft': '1vw','width':'15vw'})
+                        html.Div(html.Img(src='Images/ex1_sce_p.png'), style={'text-align': 'center'})
+                        ],className='sub3')
                 ],style={'marginBottom': '10vh'}),
         dbc.Row([
                 dbc.Col([
                     html.Div(html.Img(src='Images/ex2.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                    ],style={'marginLeft': '10vw','width':'40vw'}),
+                    ],className='sub1'),
                 dbc.Col([
                     html.Div(html.Img(src='Images/ex2_sce.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                    ],style={'marginLeft': '5vw','width':'15vw'}),
+                    ],className='sub2'),
                     dbc.Col([
                         html.Div(html.Img(src='Images/ex2_sce_p.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                        ],style={'marginLeft': '1vw','width':'15vw'})
+                        ],className='sub3')
                 ],style={'marginBottom': '10vh'}),
         
         dbc.Row([
                 dbc.Col([
                     html.Div(html.Img(src='Images/ex3.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                    ],style={'marginLeft': '10vw','width':'40vw'}),
+                    ],className='sub1'),
                 dbc.Col([
                     html.Div(html.Img(src='Images/ex3_sce.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                    ],style={'marginLeft': '5vw','width':'15vw'}),
+                    ],className='sub2'),
                     dbc.Col([
                         html.Div(html.Img(src='Images/ex3_sce_p.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                        ],style={'marginLeft': '1vw','width':'15vw'})
+                        ],className='sub3')
                 ],style={'marginBottom': '5vh'}),
         ]),  
     ]),

@@ -1,0 +1,35 @@
+@media only screen and (orientation: portrait) {
+    .sub1 {
+        margin-left: 10vw;
+        width: 40vw; 
+        height: 10vh;
+    }
+    .sub2 {
+        margin-left: 5vw;
+        width: 15vw; 
+        height: 10vh;
+    }
+    .sub3{
+        width: 15vw;
+        height: 10vh;
+        margin-left:1vw;
+    }
+}
+
+@media only screen and (orientation: landscape) {
+    .sub1{
+        margin-left: 10vw;
+        width: 40vw; 
+        height: 50vh;
+    }
+    .sub2 {
+        margin-left: 5vw;
+        width: 15vw; 
+        height: 50vh;
+    }
+    .sub3{
+        width: 15vw;
+        height: 50vh;
+        margin-left:1vw;
+    }
+}

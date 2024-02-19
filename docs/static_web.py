@@ -72,36 +72,36 @@ nations with comparable conflict trajectories.'''),
                ]),  
         dbc.Row([
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex1.png'),className='sub1')
+                    html.Div(html.Img(src='Images/ex1.png',className='sub1'))
                     ]),
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex1_sce.png'),className='sub2')
+                    html.Div(html.Img(src='Images/ex1_sce.png',className='sub2'))
                     ]),
                 dbc.Col([
-                        html.Div(html.Img(src='Images/ex1_sce_p.png'), className='sub3')
+                        html.Div(html.Img(src='Images/ex1_sce_p.png', className='sub3'))
                         ])
                 ],style={'marginBottom': '10vh'}),
         dbc.Row([
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex2.png'), className='sub1')
+                    html.Div(html.Img(src='Images/ex2.png', className='sub1'))
                     ]),
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex2_sce.png'), className='sub2')
+                    html.Div(html.Img(src='Images/ex2_sce.png', className='sub2'))
                     ]),
                     dbc.Col([
-                        html.Div(html.Img(src='Images/ex2_sce_p.png'), className='sub3')
+                        html.Div(html.Img(src='Images/ex2_sce_p.png', className='sub3'))
                         ])
                 ],style={'marginBottom': '10vh'}),
         
         dbc.Row([
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex3.png'), className='sub1')
+                    html.Div(html.Img(src='Images/ex3.png', className='sub1'))
                     ]),
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex3_sce.png'), className='sub2')
+                    html.Div(html.Img(src='Images/ex3_sce.png', className='sub2'))
                     ]),
                 dbc.Col([
-                        html.Div(html.Img(src='Images/ex3_sce_p.png'), className='sub3')
+                        html.Div(html.Img(src='Images/ex3_sce_p.png', className='sub3'))
                         ])
                 ],style={'marginBottom': '5vh'}),
         ]),  

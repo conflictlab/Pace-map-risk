@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 30000); // 5000 milliseconds = 5 seconds
 });
 
-
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
             var hiddenButton = document.getElementById('hidden_but');

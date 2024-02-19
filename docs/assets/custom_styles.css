@@ -2,16 +2,16 @@
     .sub1 {
         margin-left: 5vw;
         width: 35vw; 
-        height: 15vh;
+        height: 25vh;
     }
     .sub2 {
         margin-left: 1vw;
         width: 15vw; 
-        height: 15vh;
+        height: 25vh;
     }
     .sub3{
         width: 15vw;
-        height: 15vh;
+        height: 25vh;
         margin-left:1vw;
     }
 }

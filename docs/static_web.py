@@ -8,6 +8,7 @@ import dash
 import pandas as pd
 from dash import html, dcc
 import dash_bootstrap_components as dbc
+import base64
 
 # Define the path for the new PDF and the uploaded image
 
@@ -20,6 +21,15 @@ webapp.title = 'Pace Risk Map'
 webapp._favicon = ("icone_pace.ico")
 server = webapp.server
 config = {'displayModeBar': False}
+
+
+pace_png = base64.b64encode(open('Images/ex1.png', 'rb').read()).decode('ascii')
+pace_png1 = base64.b64encode(open('Images/ex1_sce.png', 'rb').read()).decode('ascii')
+pace_png2 = base64.b64encode(open('Images/ex1_sce_p.png', 'rb').read()).decode('ascii')
+pace_png3 = base64.b64encode(open('Images/ex2.png', 'rb').read()).decode('ascii')
+pace_png4 = base64.b64encode(open('Images/ex2_sce.png', 'rb').read()).decode('ascii')
+pace_png5 = base64.b64encode(open('Images/ex2_sce_p.png', 'rb').read()).decode('ascii')
+
 
 # App layout
 webapp.layout = html.Div([
@@ -62,37 +72,37 @@ nations with comparable conflict trajectories.'''),
                ]),  
         dbc.Row([
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex1.png'), style={'text-align': 'center'})
-                    ],className='sub1'),
+                    html.Div(html.Img(src='Images/ex1.png'),className='sub1')
+                    ]),
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex1_sce.png'), style={'text-align': 'center'})
-                    ],className='sub2'),
-                    dbc.Col([
-                        html.Div(html.Img(src='Images/ex1_sce_p.png'), style={'text-align': 'center'})
-                        ],className='sub3')
+                    html.Div(html.Img(src='Images/ex1_sce.png'),className='sub2')
+                    ]),
+                dbc.Col([
+                        html.Div(html.Img(src='Images/ex1_sce_p.png'), className='sub3')
+                        ])
                 ],style={'marginBottom': '10vh'}),
         dbc.Row([
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex2.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                    ],className='sub1'),
+                    html.Div(html.Img(src='Images/ex2.png'), className='sub1')
+                    ]),
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex2_sce.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                    ],className='sub2'),
+                    html.Div(html.Img(src='Images/ex2_sce.png'), className='sub2')
+                    ]),
                     dbc.Col([
-                        html.Div(html.Img(src='Images/ex2_sce_p.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                        ],className='sub3')
+                        html.Div(html.Img(src='Images/ex2_sce_p.png'), className='sub3')
+                        ])
                 ],style={'marginBottom': '10vh'}),
         
         dbc.Row([
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex3.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                    ],className='sub1'),
+                    html.Div(html.Img(src='Images/ex3.png'), className='sub1')
+                    ]),
                 dbc.Col([
-                    html.Div(html.Img(src='Images/ex3_sce.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                    ],className='sub2'),
-                    dbc.Col([
-                        html.Div(html.Img(src='Images/ex3_sce_p.png', style={'height':'50vh'}), style={'text-align': 'center'})
-                        ],className='sub3')
+                    html.Div(html.Img(src='Images/ex3_sce.png'), className='sub2')
+                    ]),
+                dbc.Col([
+                        html.Div(html.Img(src='Images/ex3_sce_p.png'), className='sub3')
+                        ])
                 ],style={'marginBottom': '5vh'}),
         ]),  
     ]),
@@ -145,5 +155,5 @@ nations with comparable conflict trajectories.'''),
 
 
 if __name__ == '__main__':
-    webapp.run_server(debug=False)#,host='0.0.0.0',port=8080)
+    webapp.run_server(debug=False)
     

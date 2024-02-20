@@ -22,7 +22,12 @@ df = pd.read_csv("https://ucdp.uu.se/downloads/ged/ged231-csv.zip",
 df= pd.concat([df,pd.read_csv('https://ucdp.uu.se/downloads/candidateged/GEDEvent_v23_01_23_12.csv',parse_dates=['date_start','date_end'],low_memory=False)],axis=0)
 month = datetime.now().strftime("%m")
 for i in range(1,int(month)):
-    df= pd.concat([df,pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v24_0_{i}.csv',parse_dates=['date_start','date_end'],low_memory=False)],axis=0)
+    df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v24_0_{i}.csv', header=None)
+    df_can.columns = df.columns
+    df_can['date_start'] = pd.to_datetime(df_can['date_start'])
+    df_can['date_end'] = pd.to_datetime(df_can['date_end'])
+    df_can = df_can.drop_duplicates()
+    df= pd.concat([df,df_can],axis=0)
 
 df_tot = pd.DataFrame(columns=df.country.unique(),index=pd.date_range(df.date_start.min(),
                                           df.date_end.max()))
@@ -34,8 +39,7 @@ for i in df.country.unique():
             df_tot.loc[df_sub.date_start.iloc[j],i]=df_tot.loc[df_sub.date_start.iloc[j],i]+df_sub.best.iloc[j]
         else:
             pass                                                    
-                                                      
-                                       
+                                                     
 df_tot_m=df_tot.resample('M').sum()
 last_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
 df_tot_m= df_tot_m.loc[:last_month,:]

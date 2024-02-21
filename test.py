@@ -52,7 +52,6 @@ df_next = {0:pd.DataFrame(columns=df_tot_m.columns,index=range(16)),1:pd.DataFra
 df_perc = pd.DataFrame(columns=df_tot_m.columns,index=range(3))
 dict_sce = {i :[[],[],[]] for i in df_tot_m.columns}
 
-
 h_train=10
 h=6
 pred_tot=[]
@@ -295,7 +294,7 @@ df_plot = df_plot[df_plot.index!='Seven seas (open ocean)']
 df_plot = df_plot.sort_values('pred_cont')
 df_plot['color'] = np.where(df_plot['pred_cont'] > df_plot['hist_cont'], 'red', 'black')
 def calculate_alpha(row):
-    diff_ratio = (row['pred_cont'] - row['hist_cont']) / row['hist_cont']
+    diff_ratio = (row['pred_cont'] - row['hist_cont']) / (row['hist_cont']+1)
     return np.clip(diff_ratio / 2 +0.5 , 0, 1)
 df_plot['alpha'] = df_plot.apply(calculate_alpha, axis=1)
 plt.figure(figsize=(10, 6))

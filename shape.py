@@ -15,6 +15,7 @@ from matplotlib.widgets import Cursor, Button
 import numpy as np
 from dtaidistance import dtw,ed
 import bisect
+from scipy.cluster.hierarchy import linkage, fcluster
 import math
 
 def int_exc(seq_n, win):
@@ -203,7 +204,7 @@ class finder():
         Shape (Shape): An instance of the Shape class used for interactive shape finding.
         sequences (list): List to store the found sequences matching the custom shape.
     """
-    def __init__(self,data,Shape=Shape(),sequences=[]):
+    def __init__(self,data,Shape=Shape(),sequences=[],sce=None,val_sce=None):
         """
         Initializes the finder object with the given dataset and Shape instance.
 
@@ -215,6 +216,8 @@ class finder():
         self.data=data
         self.Shape=Shape
         self.sequences=sequences
+        self.sce = sce
+        self.val_sce = val_sce
         
     def find_patterns(self, metric='euclidean', min_d=0.5, dtw_sel=0, select=True):
         """
@@ -556,7 +559,43 @@ class finder():
             return tot_seq
 
 
-
+    def create_sce(self,df_conf,horizon=6):
+        if len(self.sequences) == 0:
+            raise 'No shape found, please fit before predict.'
+        
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in self.sequences]
+        pred_seq=[]
+        co=[]
+        deca=[]
+        scale=[]
+        for col,last_date,mi,ma,somme in tot_seq:
+            date=self.data.index.get_loc(last_date)
+            if date+horizon<len(self.data):
+                seq=self.data.iloc[date+1:date+1+horizon,self.data.columns.get_loc(col)].reset_index(drop=True)
+                seq = (seq - mi) / (ma - mi)
+                pred_seq.append(seq.tolist())
+                co.append(df_conf[col])
+                deca.append(last_date.year)
+                scale.append(somme)
+        tot_seq=pd.DataFrame(pred_seq)
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/2, criterion='distance')
+        if len(pd.Series(clusters).value_counts())>7:
+            sub_norm = tot_seq[(tot_seq > 5).any(axis=1)].index
+            tot_seq_c = tot_seq.copy()
+            tot_seq_c.loc[sub_norm,:] = 10
+            linkage_matrix = linkage(tot_seq_c, method='ward')
+            clusters = fcluster(linkage_matrix, horizon/2, criterion='distance')
+        tot_seq['Cluster'] = clusters
+        val_sce = tot_seq.groupby('Cluster').mean()
+        val_sce.index = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
+        df_sce=pd.DataFrame([clusters,co,deca,scale]).T
+        df_sce.columns=["Sce","Region","Decade","Scale"]
+        df_sce["Decade"] = pd.cut(df_sce["Decade"], bins=[1989, 2000, 2010, 2020, 2099], labels=['90-2000', '2000-2010', '2010-2020','2020-Now'], right=False)
+        df_sce["Scale"] = pd.cut(df_sce["Scale"], bins=[0, 10, 100, 1000,np.inf], labels=['<10', '10-100', '100-1000','>1000'], right=False)
+        self.sce = df_sce
+        self.val_sce = val_sce
+        
 
 
 

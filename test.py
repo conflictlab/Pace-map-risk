@@ -48,6 +48,8 @@ del df
 del df_tot
 #df_tot_m = pd.read_csv('Conf.csv',parse_dates=True,index_col=(0))
 
+
+df_conf=pd.read_csv('reg_coun.csv',index_col=0,squeeze=True)
 df_next = {0:pd.DataFrame(columns=df_tot_m.columns,index=range(16)),1:pd.DataFrame(columns=df_tot_m.columns,index=range(16)),2:pd.DataFrame(columns=df_tot_m.columns,index=range(16))}
 df_perc = pd.DataFrame(columns=df_tot_m.columns,index=range(3))
 dict_sce = {i :[[],[],[]] for i in df_tot_m.columns}
@@ -57,6 +59,7 @@ h=6
 pred_tot=[]
 pred_raw=[]
 dict_m={i :[] for i in df_tot_m.columns}
+dict_sce_plot = {i :[[],[]] for i in df_tot_m.columns}
 for coun in range(len(df_tot_m.columns)):
     if not (df_tot_m.iloc[-h_train:,coun]==0).all():
         shape = Shape()
@@ -68,7 +71,13 @@ for coun in range(len(df_tot_m.columns)):
             min_d_d += 0.05
             find.find_patterns(min_d=min_d_d,select=True,metric='dtw',dtw_sel=2)
         pred_ori = find.predict(horizon=h,plot=False,mode='mean')
+        find.create_sce(df_conf,h)
         pred_raw.append(pred_ori)
+        sce_ts = find.val_sce
+        sce_ts.columns = pd.date_range(start=df_tot_m.iloc[-h_train:,coun].index[-1] + pd.DateOffset(months=1), periods=6, freq='M')
+        dict_sce_plot[df_tot_m.columns[coun]][0]=find.sce
+        dict_sce_plot[df_tot_m.columns[coun]][1]=sce_ts
+        
         pred_ori = pred_ori*(df_tot_m.iloc[-h_train:,coun].max()-df_tot_m.iloc[-h_train:,coun].min())+df_tot_m.iloc[-h_train:,coun].min()
         pred_tot.append(pred_ori)
         dict_m[df_tot_m.columns[coun]]=find.sequences
@@ -79,7 +88,7 @@ for coun in range(len(df_tot_m.columns)):
         y_pred[seq_pred.sum(axis=1)>=5] = 2
         
         perc=[]
-        for i in range(3):#len(pd.Series(y_pred).value_counts())):
+        for i in range(3):
             if len(seq_pred[y_pred==i]) != 0:
                 norm = seq_pred[y_pred==i].mean() * (df_tot_m.iloc[-h_train:,coun].max()-df_tot_m.iloc[-h_train:,coun].min()) + df_tot_m.iloc[-h_train:,coun].min()
                 norm.index = pd.date_range(start=df_tot_m.iloc[-h_train:,coun].index[-1] + pd.DateOffset(months=1), periods=6, freq='M')
@@ -119,6 +128,7 @@ for coun in range(len(df_tot_m.columns)):
         
 with open('saved_dictionary.pkl', 'wb') as f:
     pickle.dump(dict_m, f)
+
     
 pred_df = [df.iloc[:, 0] for df in pred_raw]
 pred_df = pd.concat(pred_df, axis=1)
@@ -232,7 +242,9 @@ rena={'Bosnia-Herzegovina':'Bosnia and Herz.','Cambodia (Kampuchea)':'Cambodia',
 dict_sce_f = {rena[key] if key in rena else key: item for key, item in dict_sce.items()}
 with open('dict_sce.pkl', 'wb') as f:
     pickle.dump(dict_sce_f, f)
-
+dict_sce_plot_f = {rena[key] if key in rena else key: item for key, item in dict_sce_plot.items()}
+with open('sce_dictionary.pkl', 'wb') as f:
+    pickle.dump(dict_sce_plot_f, f)
 
 # =============================================================================
 # Global Map

@@ -51,7 +51,7 @@ for i in df_filtered.columns:
 min_d_list = pd.Series(min_d_list,index=df_filtered.columns)
 min_d_list = min_d_list.sort_values()
 
-for i in range(10):
+for i in range(14):
     logo_path = 'Images/PaCE_final.png'  # Replace with the actual path to your logo or image
     logo_img = plt.imread(logo_path)
     imagebox = OffsetImage(logo_img, zoom=0.2)  # You can adjust the zoom factor as needed

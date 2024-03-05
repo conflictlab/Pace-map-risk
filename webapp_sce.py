@@ -74,10 +74,9 @@ def generate_color_palette(n):
     hex_colors = [to_hex(rgba) for rgba in reds_rgba_values]
     return hex_colors
 
-# Example usage:
+
 n_colors = 5
 color_palette = generate_color_palette(n_colors)
-
 
 world = gpd.read_file('world_plot.geojson')
 pred_df=pd.read_csv('Pred_df.csv',parse_dates=True,index_col=(0))
@@ -128,10 +127,11 @@ git_png = base64.b64encode(open('github-mark.png', 'rb').read()).decode('ascii')
 x_logo = base64.b64encode(open('x_logo.png', 'rb').read()).decode('ascii')
 gif_fo = base64.b64encode(open('Images/explic.gif', 'rb').read()).decode('ascii')
 gif_dtw = base64.b64encode(open('Images/dtw.gif', 'rb').read()).decode('ascii')
+gif_sce = base64.b64encode(open('Images/expli_sce.gif', 'rb').read()).decode('ascii')
 ab1 = base64.b64encode(open('Images/about_1.png', 'rb').read()).decode('ascii')
 ab2 = base64.b64encode(open('Images/about_2.png', 'rb').read()).decode('ascii')
 ab3 = base64.b64encode(open('Images/about_3.png', 'rb').read()).decode('ascii')
-ab4 = base64.b64encode(open('Images/about_4.png', 'rb').read()).decode('ascii')
+ab4 = base64.b64encode(open('Images/about_4b.png', 'rb').read()).decode('ascii')
 
 
 webapp = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.LUX],
@@ -272,7 +272,14 @@ about_layout=html.Div([
         DTW works by aligning the two sequences in a way that minimizes the total distance between corresponding points, allowing for both temporal shifts and local deformations. This alignment is achieved by warping the time axis of one sequence with respect to the other. The warping path represents the optimal alignment, and the DTW distance is the cumulative sum of the distances along this path.
         One of the key advantages of DTW is its ability to handle sequences of unequal length and to flexibly adapt to local variations in timing.
         The DTW distance is computed, and if it falls below a predefined threshold, the historical sequence is classified as a match."""),
-        html.Div(html.Img(src='data:image/gif;base64,{}'.format(gif_dtw), style={'width': '80%'}), style={'text-align': 'center'})
+        html.Div(html.Img(src='data:image/gif;base64,{}'.format(gif_dtw), style={'width': '80%'}), style={'text-align': 'center'}),
+        html.H3("Creates the Scenarios",style={'marginTop':30}),
+        dcc.Markdown("""
+        Predictive scenarios are generated through a structured process that evaluates potential scenarios using the Past Future of matched sequences.
+        Clusters are formed based on the similarity of the predicted sequences using the Ward's method.
+        Finally, the predictive scenarios are aggregated and labeled based on their cluster membership, with additional categorization by region, decade, and scale. This structured approach allows for the generation of meaningful and actionable predictive scenarios, offering insights into future trends based on historical data patterns.
+        """),
+        html.Div(html.Img(src='data:image/gif;base64,{}'.format(gif_sce), style={'width': '80%'}), style={'text-align': 'center'})
     ],style={'marginLeft':50})                 
     ])
 

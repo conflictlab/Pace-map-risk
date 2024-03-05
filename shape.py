@@ -581,11 +581,14 @@ class finder():
         linkage_matrix = linkage(tot_seq, method='ward')
         clusters = fcluster(linkage_matrix, horizon/2, criterion='distance')
         if len(pd.Series(clusters).value_counts())>7:
-            sub_norm = tot_seq[(tot_seq > 5).any(axis=1)].index
+            sub_norm = tot_seq[(tot_seq > 2).any(axis=1)].index
             tot_seq_c = tot_seq.copy()
             tot_seq_c.loc[sub_norm,:] = 10
             linkage_matrix = linkage(tot_seq_c, method='ward')
             clusters = fcluster(linkage_matrix, horizon/2, criterion='distance')
+        if len(pd.Series(clusters).value_counts())>7:
+            linkage_matrix = linkage(tot_seq_c, method='ward')
+            clusters = fcluster(linkage_matrix, horizon, criterion='distance')
         tot_seq['Cluster'] = clusters
         val_sce = tot_seq.groupby('Cluster').mean()
         val_sce.index = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)

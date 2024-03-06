@@ -7,7 +7,6 @@ Created on Mon Jan 15 22:24:43 2024
 import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
-import dash_mantine_components as dmc
 import dash_leaflet as dl
 from dash.dependencies import Input, Output, State
 from matplotlib.colors import to_hex
@@ -383,19 +382,14 @@ def display_country_plot(feature):
                 fig_dis.update_traces(textposition='inside')
                 sce = dbc.Container([
                     dbc.Row([
-                        dbc.Col([dcc.Dropdown(
+                        dbc.Col([html.Div(dcc.Dropdown(
                                     id='drop',
                                     options=[{'label': 'Total', 'value': 0}] + [{'label': f'Scenario {i+1}', 'value': i+1} for i in range(len(dict_sce[country_name][1]))],
                                     placeholder='Total',
                                     value=0,
                                     clearable=False,  
-                                    searchable=False,style = {
-                                        'color': 'grey',
-                                        'border-color': 'grey',  
-                                        'border-radius': '5px',
-                                        'width':'10vw',
-                                        'margin':'auto'
-                                    }
+                                    searchable=False),
+                                    style={'width':'50%','margin':'auto','marginTop':'5%'}
                                 ),
                                 html.Div(dcc.Graph(figure=fig_bar, config=config,id='sce_1'),style={'height': '80%'}),
                         ], width=12, lg=3, style={'height': '100%'}, className="g-0"), 
@@ -601,4 +595,4 @@ webapp.layout = html.Div([
 ])
 
 if __name__ == '__main__':
-    webapp.run_server(debug=False)#,host='0.0.0.0',port=8080)
+    webapp.run_server(debug=False,host='0.0.0.0',port=8080)

@@ -8,7 +8,7 @@ import dash
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import dash_leaflet as dl
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 from matplotlib.colors import to_hex
 import matplotlib.pyplot as plt
 import geopandas as gpd
@@ -18,7 +18,6 @@ import json
 import pandas as pd
 import pickle 
 import base64
-import numpy as np
 
 def generate_subplot(series):
     fig = px.line(series, title=series.name)
@@ -67,15 +66,6 @@ def get_color(log_per_pr):
     hex_color = to_hex(rgba_color)
     return hex_color
 
-def generate_color_palette(n):
-    reds_cmap = plt.cm.get_cmap('Reds')
-    reds_rgba_values = reds_cmap(np.linspace(0.2, 1, n))
-    hex_colors = [to_hex(rgba) for rgba in reds_rgba_values]
-    return hex_colors
-
-
-n_colors = 5
-color_palette = generate_color_palette(n_colors)
 
 world = gpd.read_file('world_plot.geojson')
 pred_df=pd.read_csv('Pred_df.csv',parse_dates=True,index_col=(0))
@@ -115,10 +105,15 @@ world['name_alt']= world['name'].replace(reversed_rena)
 world['color'] = world['log_per_pred'].apply(get_color)
 l_country = [dl.GeoJSON(data=json.loads(world.iloc[index:index+1].to_json()), style={'color': row['color'], 'opacity': 0, 'fillOpacity': '1','z-index':1}) for index, row in world.iterrows()]
 
-with open('sce_dictionary.pkl', 'rb') as f:
+df_perc = pd.read_csv('perc.csv',parse_dates=True,index_col=(0))
+df_d = pd.read_csv('dec.csv',parse_dates=True,index_col=(0))
+df_s = pd.read_csv('sta.csv',parse_dates=True,index_col=(0))
+df_i = pd.read_csv('inc.csv',parse_dates=True,index_col=(0))
+
+with open('dict_sce.pkl', 'rb') as f:
     dict_sce = pickle.load(f)
 missing_columns.discard('Dominican Rep.')    
-dict_sce.update({col: [[],[]] for col in missing_columns})
+dict_sce.update({col: [[],[],[]] for col in missing_columns})
 
 
 pace_png = base64.b64encode(open('PaCE_final_icon.png', 'rb').read()).decode('ascii')
@@ -126,11 +121,10 @@ git_png = base64.b64encode(open('github-mark.png', 'rb').read()).decode('ascii')
 x_logo = base64.b64encode(open('x_logo.png', 'rb').read()).decode('ascii')
 gif_fo = base64.b64encode(open('Images/explic.gif', 'rb').read()).decode('ascii')
 gif_dtw = base64.b64encode(open('Images/dtw.gif', 'rb').read()).decode('ascii')
-gif_sce = base64.b64encode(open('Images/expli_sce.gif', 'rb').read()).decode('ascii')
 ab1 = base64.b64encode(open('Images/about_1.png', 'rb').read()).decode('ascii')
 ab2 = base64.b64encode(open('Images/about_2.png', 'rb').read()).decode('ascii')
 ab3 = base64.b64encode(open('Images/about_3.png', 'rb').read()).decode('ascii')
-ab4 = base64.b64encode(open('Images/about_4b.png', 'rb').read()).decode('ascii')
+ab4 = base64.b64encode(open('Images/about_4.png', 'rb').read()).decode('ascii')
 
 
 webapp = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.LUX],
@@ -191,8 +185,7 @@ home_layout = html.Div([
         ]),]),
     html.Div(id='plot_test4')],
     type="dot",fullscreen=True,color="#df2226"
-    ),
-    html.Div(id='stored-country-name', style={'display': 'none'})  
+    )
 ])
 
 report_layout= html.Div([
@@ -271,22 +264,15 @@ about_layout=html.Div([
         DTW works by aligning the two sequences in a way that minimizes the total distance between corresponding points, allowing for both temporal shifts and local deformations. This alignment is achieved by warping the time axis of one sequence with respect to the other. The warping path represents the optimal alignment, and the DTW distance is the cumulative sum of the distances along this path.
         One of the key advantages of DTW is its ability to handle sequences of unequal length and to flexibly adapt to local variations in timing.
         The DTW distance is computed, and if it falls below a predefined threshold, the historical sequence is classified as a match."""),
-        html.Div(html.Img(src='data:image/gif;base64,{}'.format(gif_dtw), style={'width': '80%'}), style={'text-align': 'center'}),
-        html.H3("Creates the Scenarios",style={'marginTop':30}),
-        dcc.Markdown("""
-        Predictive scenarios are generated through a structured process that evaluates potential scenarios using the Past Future of matched sequences.
-        Clusters are formed based on the similarity of the predicted sequences using the Ward's method.
-        Finally, the predictive scenarios are aggregated and labeled based on their cluster membership, with additional categorization by region, decade, and scale. This structured approach allows for the generation of meaningful and actionable predictive scenarios, offering insights into future trends based on historical data patterns.
-        """),
-        html.Div(html.Img(src='data:image/gif;base64,{}'.format(gif_sce), style={'width': '80%'}), style={'text-align': 'center'})
-    ],style={'marginLeft':50})                 
+        html.Div(html.Img(src='data:image/gif;base64,{}'.format(gif_dtw), style={'width': '80%'}), style={'text-align': 'center'})
+    ],style={'marginLeft':50})
+        
     ])
 
 @webapp.callback(Output("plot_test", "children"), 
               Output("plot_test2", "children"),
               Output("plot_test3", "children"),
               Output("plot_test4", "children"),
-              Output('stored-country-name', 'children'),
               Input("total_c", "clickData"),
               prevent_initial_call=True)
 
@@ -325,83 +311,121 @@ def display_country_plot(feature):
                 fig3 = px.bar(x=m_names, y=m_dist, title='Best Matches',
                               color_discrete_sequence=['grey']).update_layout(margin=dict(t=60,l=30,b=5,r=5), 
                               xaxis_title='',yaxis_title='',showlegend=False,plot_bgcolor="white", xaxis_tickangle=60,title=dict(text='Best Matches', font=dict(size=16, color='darkgrey'), x=0.5))
-                colu = generate_color_palette(len(dict_sce[country_name][1]))
-                filtered_data = hist_df.loc[:,country_name] 
-                sce_ts = dict_sce[country_name][1].iloc[0,:]* (filtered_data.max()-filtered_data.min()) + filtered_data.min()
-                seq_f = pd.concat([filtered_data,sce_ts],axis=0)                                                              
-                fig_sce = px.line(x=seq_f.index, y=seq_f) 
-                fig_sce.update_traces(hoverinfo='skip')
-                fig_sce.update_traces(line=dict(color='black'))
-                fig_sce.update_layout(annotations=[], overwrite=True)
-                fig_sce.update_layout(
-                    showlegend=False,plot_bgcolor="white",margin=dict(t=60,l=5,b=5,r=5),
+                seq_f=df_d.loc[:,country_name]
+                figalp = px.line(x=seq_f.index, y=seq_f, title=country_name) 
+                figalp.update_yaxes(visible=True, fixedrange=True)
+                figalp.update_layout(annotations=[], overwrite=True)
+                figalp.update_layout(
+                    showlegend=False,plot_bgcolor="white",margin=dict(t=60,l=40,b=5,r=5),
                     xaxis_title='',yaxis_title='',yaxis=dict(showgrid=True),
-                    font=dict(size=20, color='black'), title_x=0.5)
-                for i in range(len(dict_sce[country_name][1])):
-                    fig_sce.add_trace(go.Scatter(
-                        x=[filtered_data.index[-1],dict_sce[country_name][1].iloc[i,:].index[0]],
-                        y=[filtered_data.iloc[-1],dict_sce[country_name][1].iloc[i,0]* (filtered_data.max()-filtered_data.min()) + filtered_data.min()],
-                        mode='lines',
-                        marker=dict(color=colu[i]),
-                        line=dict(color=colu[i])
-                    ))
-                fig_sce.update_traces(hoverinfo='skip')
-                for i in range(len(dict_sce[country_name][1])):
-                    fig_sce.add_trace(go.Scatter(
-                        x=dict_sce[country_name][1].iloc[i,:].index,
-                        y=dict_sce[country_name][1].iloc[i,:]* (filtered_data.max()-filtered_data.min()) + filtered_data.min(),
-                        mode='markers+lines',
-                        marker=dict(color=colu[i]),
-                        line=dict(color=colu[i]),
-                        name=f'Scenario {i+1}',
-                        hovertext=f'pr = {dict_sce[country_name][1].index[i]}'
-                    ))
-                    fig_sce.update_layout(
-                        hoverlabel=dict(
-                        font_size=12))
-                #fig_sce.update_yaxes(range=[0, filtered_data.max()*1.5],visible=True)
-                fig_bar = px.bar(x=[f'{i+1}' for i in range(len(dict_sce[country_name][1]))],y=dict_sce[country_name][1].index,color_discrete_sequence=['grey']).update_layout(xaxis_title='Scenario',
-                                 yaxis_title='Probability',showlegend=False,plot_bgcolor="white", xaxis_tickangle=60)
-                # Prepare data
-                data = []
-                for category in ["Region","Decade","Scale"]:
-                    df_temp = pd.DataFrame(dict_sce[country_name][0][category].value_counts(normalize=True)*100).reset_index()
-                    df_temp.columns = ['Value', 'Percentage']
-                    df_temp['Category'] = category
-                    data.append(df_temp)
+                    title=dict(text=f'Decrease pr={df_perc.loc[0,country_name]}%', font=dict(size=20, color='black'), x=0.5))
+                figalp.update_traces(line=dict(color='black'))    
+                last_six_points = seq_f.tail(6)
+                last_sept_points = seq_f.tail(7)
+                figalp.add_trace(go.Scatter(
+                    x=last_six_points.index,
+                    y=last_six_points.values,
+                    mode='markers+lines',
+                    marker=dict(color='black'),
+                    line=dict(color='black'),
+                    name='Past Future'
+                ))
+                figalp.add_trace(go.Scatter(
+                    x=last_sept_points.index,
+                    y=last_sept_points.values,
+                    mode='lines',
+                    marker=dict(color='black'),
+                    line=dict(color='black')
+                ))
                 
-                # Combine all dataframes into one
-                df_combined = pd.concat(data)
                 
-                # Plot
-                fig_dis = px.bar(df_combined, x="Category", y="Percentage", text="Value",
-                             title="Category of Matches",color_discrete_sequence=['grey'],
-                             labels={"Percentage": "Percentage (%)"},
-                             category_orders={"Category": ["Region","Decade","Scale"]})  
-                fig_dis.update_layout(showlegend=False,barmode='stack', plot_bgcolor="white",xaxis_title='', yaxis_title='Percentage (%)')
-                fig_dis.update_traces(textposition='inside')
-                sce = dbc.Container([
-                    dbc.Row([
-                        dbc.Col([html.Div(dcc.Dropdown(
-                                    id='drop',
-                                    options=[{'label': 'Total', 'value': 0}] + [{'label': f'Scenario {i+1}', 'value': i+1} for i in range(len(dict_sce[country_name][1]))],
-                                    placeholder='Total',
-                                    value=0,
-                                    clearable=False,  
-                                    searchable=False),
-                                    style={'width':'50%','margin':'auto','marginTop':'5%'}
-                                ),
-                                html.Div(dcc.Graph(figure=fig_bar, config=config,id='sce_1'),style={'height': '80%'}),
-                        ], width=12, lg=3, style={'height': '100%'}, className="g-0"), 
-                        dbc.Col([
-                            dcc.Graph(figure=fig_sce, config=config,id='sce_2')
-                        ], width=12, lg=5, style={'height': '100%'}, className="g-0"),  # Adjusted for full height
-                        dbc.Col([
-                            html.Div(dcc.Graph(figure=fig_dis, config=config,id='sce_3')),
-                        ], width=12, lg=4, style={'height': '100%'}, className="g-0")
-                    ], align="stretch", className="gx-0"),  # Ensure columns stretch to fill the container
-                ], fluid=True, style={'padding': '0'})  # dmc.SelectEnsure the container takes full height of the viewport
-
+                seq_f=df_s.loc[:,country_name]
+                figalp2 = px.line(x=seq_f.index, y=seq_f, title=country_name) 
+                figalp2.update_yaxes(visible=True, fixedrange=True)
+                figalp2.update_layout(annotations=[], overwrite=True)
+                figalp2.update_layout(
+                    showlegend=False,plot_bgcolor="white",margin=dict(t=60,l=40,b=5,r=5),
+                    xaxis_title='',yaxis_title='',yaxis=dict(showgrid=True),
+                    title=dict(text=f'Stable pr={df_perc.loc[1,country_name]}%', font=dict(size=20, color='rgb(216, 134, 141)'), x=0.5))
+                figalp2.update_traces(line=dict(color='black'))    
+                last_six_points = seq_f.tail(6)
+                last_sept_points = seq_f.tail(7)
+                figalp2.add_trace(go.Scatter(
+                    x=last_six_points.index,
+                    y=last_six_points.values,
+                    mode='markers+lines',
+                    marker=dict(color='rgb(216, 134, 141)'),
+                    line=dict(color='rgb(216, 134, 141)'),
+                    name='Past Future'
+                ))
+                figalp2.add_trace(go.Scatter(
+                    x=last_sept_points.index,
+                    y=last_sept_points.values,
+                    mode='lines',
+                    marker=dict(color='rgb(216, 134, 141)'),
+                    line=dict(color='rgb(216, 134, 141)')
+                ))
+                
+                seq_f=df_i.loc[:,country_name]
+                figalp3 = px.line(x=seq_f.index, y=seq_f, title=country_name) 
+                figalp3.update_yaxes(visible=True, fixedrange=True)
+                figalp3.update_layout(annotations=[], overwrite=True)
+                figalp3.update_layout(
+                    showlegend=False,plot_bgcolor="white",margin=dict(t=60,l=40,b=5,r=5),
+                    xaxis_title='',yaxis_title='',yaxis=dict(showgrid=True),
+                    title=dict(text=f'Increase pr={df_perc.loc[2,country_name]}%', font=dict(size=20, color='red'), x=0.5))
+                figalp3.update_traces(line=dict(color='black'))    
+                last_six_points = seq_f.tail(6)
+                last_sept_points = seq_f.tail(7)
+                figalp3.add_trace(go.Scatter(
+                    x=last_six_points.index,
+                    y=last_six_points.values,
+                    mode='markers+lines',
+                    marker=dict(color='red'),
+                    line=dict(color='red'),
+                    name='Past Future'
+                ))
+                figalp3.add_trace(go.Scatter(
+                    x=last_sept_points.index,
+                    y=last_sept_points.values,
+                    mode='lines',
+                    marker=dict(color='red'),
+                    line=dict(color='red')
+                ))
+                
+                figd = [generate_subplot_sce(series,'black') for series in dict_sce[country_name][0]]
+                figs = [generate_subplot_sce(series,'rgb(216, 134, 141)') for series in dict_sce[country_name][1]]
+                figi = [generate_subplot_sce(series,'red') for series in dict_sce[country_name][2]]
+                # sce = html.Div([
+                #     # First row of graphs
+                #     html.Div([
+                #         dcc.Graph(figure=figalp, style={'width': '33vw', 'height': '30vh'}, config=config),
+                #         dcc.Graph(figure=figalp2, style={'width': '33vw', 'height': '30vh'}, config=config),
+                #         dcc.Graph(figure=figalp3, style={'width': '33vw', 'height': '30vh'}, config=config)
+                #     ], style={"display": "flex", 'flexDirection': 'row', 'marginTop': '3vh'}),
+                
+                #     # Second row of graphs
+                #     html.Div([
+                #         html.Div([dcc.Graph(figure=fig, style={'width': '33vw', 'height': '23vh'}, config=config) for fig in figd], style={"display": "flex", 'flexDirection': 'column', 'width': '33vw'}),
+                #         html.Div([dcc.Graph(figure=fig, style={'width': '33vw', 'height': '23vh'}, config=config) for fig in figs], style={"display": "flex", 'flexDirection': 'column', 'width': '33vw'}),
+                #         html.Div([dcc.Graph(figure=fig, style={'width': '33vw', 'height': '23vh'}, config=config) for fig in figi], style={"display": "flex", 'flexDirection': 'column', 'width': '33vw'})
+                #     ], style={"display": "flex", 'flexDirection': 'row'})
+                # ])   
+                sce = html.Div([
+                    # First row of graphs
+                    html.Div([
+                        dcc.Graph(figure=figalp, className='sub-graph-sce', config=config),
+                        html.Div([dcc.Graph(figure=fig, className='sub-graph-sce', config=config) for fig in figd], style={"display": "flex", 'flexDirection': 'column'})
+                    ], style={ 'marginTop': '3vh'}),
+                    html.Div([
+                        dcc.Graph(figure=figalp2, className='sub-graph-sce', config=config),
+                        html.Div([dcc.Graph(figure=fig, className='sub-graph-sce', config=config) for fig in figs], style={"display": "flex", 'flexDirection': 'column'})
+                    ], style={'marginTop': '3vh'}),
+                    html.Div([
+                        dcc.Graph(figure=figalp3, className='sub-graph-sce', config=config),
+                        html.Div([dcc.Graph(figure=fig, className='sub-graph-sce', config=config) for fig in figi], style={"display": "flex", 'flexDirection': 'column'})
+                    ], style={ 'marginTop': '3vh'}),
+                ],className='graph-container-sce')   
             else:
                 fig3 = px.bar().update_layout(margin=dict(t=30,l=30,b=5,r=5), 
                 xaxis_title='',yaxis_title='',showlegend=False,plot_bgcolor="white",title=dict(text='Best Matches', font=dict(size=16, color='darkgrey'), x=0.5))        
@@ -413,164 +437,13 @@ def display_country_plot(feature):
             for i in range(0, len(figs), 3):
                 row = html.Div([dcc.Graph(figure=fig,className='sub-graph',config=config) for fig in figs[i:i+3]], className='graph-container',style={"display": "flex"})
                 rows.append(row)
+
+
+            
             return (dcc.Graph(figure=fig,className='plot-emb',config=config),
                     dcc.Graph(figure=fig2,className='plot-emb',config=config),
                     dcc.Graph(figure=fig3,className='plot-emb',config=config),
-                    dcc.Tabs([dcc.Tab(label='Scenarios',children=sce,value='tab-1'),dcc.Tab(label='Matched Sequences',children=rows,value='tab-2')],colors={"border": "#555", 'background': '#D3D3D3'}),
-                    country_name)
-                    
-
-@webapp.callback(Output('sce_1', 'figure'),
-                 Output('sce_2', 'figure'),
-                 Output('sce_3', 'figure'),
-                Input('drop', 'value'),
-                State('stored-country-name', 'children'),
-                prevent_initial_call=True)
-
-def update_scenar(value,country_name):
-    if value is not None:
-        if value>0:
-            colu = generate_color_palette(len(dict_sce[country_name][1]))
-            filtered_data = hist_df.loc[:,country_name] 
-            sce_ts = dict_sce[country_name][1].iloc[int(value-1),:]* (filtered_data.max()-filtered_data.min()) + filtered_data.min()
-            seq_f = pd.concat([filtered_data,sce_ts],axis=0)                                                              
-            fig_sce = px.line(x=seq_f.index, y=seq_f) 
-            fig_sce.update_traces(hoverinfo='skip')
-            fig_sce.update_traces(line=dict(color='black'))
-            fig_sce.update_layout(annotations=[], overwrite=True)
-            fig_sce.update_layout(
-                showlegend=False,plot_bgcolor="white",margin=dict(t=60,l=5,b=5,r=5),
-                xaxis_title='',yaxis_title='',yaxis=dict(showgrid=True),
-                font=dict(size=20, color='black'), title_x=0.5)
-            for i in range(len(dict_sce[country_name][1])):
-                if int(value-1) == i:
-                    fig_sce.add_trace(go.Scatter(
-                        x=[filtered_data.index[-1],dict_sce[country_name][1].iloc[i,:].index[0]],
-                        y=[filtered_data.iloc[-1],dict_sce[country_name][1].iloc[i,0]* (filtered_data.max()-filtered_data.min()) + filtered_data.min()],
-                        mode='lines',
-                        marker=dict(color=colu[i]),
-                        line=dict(color=colu[i])
-                    ))
-                else:
-                    fig_sce.add_trace(go.Scatter(
-                        x=[filtered_data.index[-1],dict_sce[country_name][1].iloc[i,:].index[0]],
-                        y=[filtered_data.iloc[-1],dict_sce[country_name][1].iloc[i,0]* (filtered_data.max()-filtered_data.min()) + filtered_data.min()],
-                        mode='lines',
-                        marker=dict(color='rgba(128, 128, 128, 0.3)'),
-                        line=dict(color='rgba(128, 128, 128, 0.3)')
-                    ))
-                fig_sce.update_traces(hoverinfo='skip')
-            for i in range(len(dict_sce[country_name][1])):
-                if int(value-1) == i:
-                    fig_sce.add_trace(go.Scatter(
-                        x=dict_sce[country_name][1].iloc[i,:].index,
-                        y=dict_sce[country_name][1].iloc[i,:]* (filtered_data.max()-filtered_data.min()) + filtered_data.min(),
-                        mode='markers+lines',
-                        marker=dict(color=colu[i]),
-                        line=dict(color=colu[i]),
-                        name=f'Scenario {i+1}',
-                        hovertext=f'pr = {dict_sce[country_name][1].index[i]}'
-                    ))
-                    
-                else:
-                    fig_sce.add_trace(go.Scatter(
-                        x=dict_sce[country_name][1].iloc[i,:].index,
-                        y=dict_sce[country_name][1].iloc[i,:]* (filtered_data.max()-filtered_data.min()) + filtered_data.min(),
-                        mode='markers+lines',
-                        marker=dict(color='rgba(128, 128, 128, 0.3)'),
-                        line=dict(color='rgba(128, 128, 128, 0.3)'),
-                        name=f'Scenario {i+1}',
-                        hovertext=f'pr = {dict_sce[country_name][1].index[i]}'
-                    ))
-                fig_sce.update_layout(
-                    hoverlabel=dict(
-                    font_size=12))
-            data_sub=dict_sce[country_name][1].iloc[int(value-1),:]* (filtered_data.max()-filtered_data.min()) + filtered_data.min()
-            if data_sub.max()<filtered_data.max():
-                fig_sce.update_yaxes(range=[0, filtered_data.max()*1.5],visible=True)
-            else:
-                fig_sce.update_yaxes(range=[0, data_sub.max()*1.5],visible=True)
-            
-            colors=['rgba(128, 128, 128, 0.3)' if i!= int(value-1) else colu[int(value-1)] for i in range(len(dict_sce[country_name][1])) ]
-            fig_bar = px.bar(x=[f'{i+1}' for i in range(len(dict_sce[country_name][1]))],y=dict_sce[country_name][1].index,color=[f'{i+1}' for i in range(len(dict_sce[country_name][1]))],
-                             color_discrete_sequence=colors).update_layout(xaxis_title='Scenario',
-                             yaxis_title='Probability',showlegend=False,plot_bgcolor="white", xaxis_tickangle=60)
-            # Prepare data
-            data = []
-            for category in ["Region","Decade","Scale"]:
-                df_temp = pd.DataFrame(dict_sce[country_name][0][dict_sce[country_name][0]['Sce']==int(value)][category].value_counts(normalize=True)*100).reset_index()
-                df_temp.columns = ['Value', 'Percentage']
-                df_temp['Category'] = category
-                data.append(df_temp)
-            
-            # Combine all dataframes into one
-            df_combined = pd.concat(data)
-            
-            # Plot
-            fig_dis = px.bar(df_combined, x="Category", y="Percentage", text="Value",
-                         title="Category of Matches",color_discrete_sequence=[colu[int(value-1)]],
-                         labels={"Percentage": "Percentage (%)"},
-                         category_orders={"Category": ["Region","Decade","Scale"]})  
-            fig_dis.update_layout(showlegend=False,barmode='stack', plot_bgcolor="white",xaxis_title='', yaxis_title='Percentage (%)')
-            fig_dis.update_traces(textposition='inside')
-            return fig_bar,fig_sce,fig_dis
-        else:
-            data_sub=hist_df.loc[:,country_name] 
-            colu = generate_color_palette(len(dict_sce[country_name][1]))
-            filtered_data = hist_df.loc[:,country_name] 
-            sce_ts = dict_sce[country_name][1].iloc[0,:]* (filtered_data.max()-filtered_data.min()) + filtered_data.min()
-            seq_f = pd.concat([filtered_data,sce_ts],axis=0)                                                              
-            fig_sce = px.line(x=seq_f.index, y=seq_f) 
-            fig_sce.update_traces(hoverinfo='skip')
-            fig_sce.update_traces(line=dict(color='black'))
-            fig_sce.update_layout(annotations=[], overwrite=True)
-            fig_sce.update_layout(
-                showlegend=False,plot_bgcolor="white",margin=dict(t=60,l=5,b=5,r=5),
-                xaxis_title='',yaxis_title='',yaxis=dict(showgrid=True),
-                font=dict(size=20, color='black'), title_x=0.5)
-            for i in range(len(dict_sce[country_name][1])):
-                fig_sce.add_trace(go.Scatter(
-                    x=[filtered_data.index[-1],dict_sce[country_name][1].iloc[i,:].index[0]],
-                    y=[filtered_data.iloc[-1],dict_sce[country_name][1].iloc[i,0]* (filtered_data.max()-filtered_data.min()) + filtered_data.min()],
-                    mode='lines',
-                    marker=dict(color=colu[i]),
-                    line=dict(color=colu[i])
-                ))
-    
-                fig_sce.update_traces(hoverinfo='skip')
-            for i in range(len(dict_sce[country_name][1])):
-                fig_sce.add_trace(go.Scatter(
-                    x=dict_sce[country_name][1].iloc[i,:].index,
-                    y=dict_sce[country_name][1].iloc[i,:]* (filtered_data.max()-filtered_data.min()) + filtered_data.min(),
-                    mode='markers+lines',
-                    marker=dict(color=colu[i]),
-                    line=dict(color=colu[i]),
-                    name=f'Scenario {i+1}',
-                    hovertext=f'pr = {dict_sce[country_name][1].index[i]}'))
-                fig_sce.update_layout(
-                    hoverlabel=dict(
-                    font_size=12))
-            fig_bar = px.bar(x=[f'{i+1}' for i in range(len(dict_sce[country_name][1]))],y=dict_sce[country_name][1].index,color_discrete_sequence=['grey']).update_layout(xaxis_title='Scenario',
-                             yaxis_title='Probability',showlegend=False,plot_bgcolor="white", xaxis_tickangle=60)
-            # Prepare data
-            data = []
-            for category in ["Region","Decade","Scale"]:
-                df_temp = pd.DataFrame(dict_sce[country_name][0][category].value_counts(normalize=True)*100).reset_index()
-                df_temp.columns = ['Value', 'Percentage']
-                df_temp['Category'] = category
-                data.append(df_temp)
-            
-            # Combine all dataframes into one
-            df_combined = pd.concat(data)
-            
-            # Plot
-            fig_dis = px.bar(df_combined, x="Category", y="Percentage", text="Value",
-                         title="Category of Matches",color_discrete_sequence=['grey'],
-                         labels={"Percentage": "Percentage (%)"},
-                         category_orders={"Category": ["Region","Decade","Scale"]})  
-            fig_dis.update_layout(showlegend=False,barmode='stack', plot_bgcolor="white",xaxis_title='', yaxis_title='Percentage (%)')
-            fig_dis.update_traces(textposition='inside')
-            return fig_bar,fig_sce,fig_dis
+                    dcc.Tabs([dcc.Tab(label='Matched Sequences',children=rows,value='tab-1'),dcc.Tab(label='Scenarios',children=sce,value='tab-2')],colors={"border": "#555", 'background': '#D3D3D3'}))
 
 
 @webapp.callback(Output('page-content', 'children'),
@@ -596,3 +469,4 @@ webapp.layout = html.Div([
 
 if __name__ == '__main__':
     webapp.run_server(debug=False,host='0.0.0.0',port=8080)
+    

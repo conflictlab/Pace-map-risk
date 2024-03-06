@@ -125,7 +125,7 @@ pace_logo = 'Images/PaCE_final.png'
 c.drawImage(pace_logo, x=50, y=20, width=100,height=40,  mask='auto')  # Scaled to fit
 
 info_text = "Click here for more info"
-info_url = "https://shapefinderlive.azurewebsites.net/"
+info_url = "https://thomasschinca.github.io/Pace-map-risk/"
 c.setFillColor(HexColor("#999999"))  # Blue color for the link text
 c.setFont("Poppins", 10)
 text_width = c.stringWidth(info_text, "Poppins", 10)
@@ -385,7 +385,7 @@ pace_logo = 'Images/PaCE_final.png'
 c.drawImage(pace_logo, x=50, y=20, width=100,height=40,  mask='auto')  # Scaled to fit
 
 info_text = "Click here for more info"
-info_url = "https://shapefinder.azurewebsites.net/"
+info_url = "https://thomasschinca.github.io/Pace-map-risk/"
 c.setFillColor(HexColor("#999999"))  # Blue color for the link text
 c.setFont("Poppins", 10)
 text_width = c.stringWidth(info_text, "Poppins", 10)

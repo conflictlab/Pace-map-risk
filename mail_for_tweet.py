@@ -19,7 +19,7 @@ EMAIL = 'thomas.schincariol@gmail.com'
 PASSWORD = 'hfzd vsdd zrjo spnt'
 
 subject = "Tweet of the week"
-body = "Hello Thomas, This is the tweet tentative. To send it : https://github.com/ThomasSchinca/Pace-map-risk/blob/main/.github/workflows/send_tweet"
+body = "Hello Thomas, This is the tweet tentative. To send it : https://github.com/ThomasSchinca/Pace-map-risk/actions/workflows/send_tweet.yml"
 receiver_email = "schincat@tcd.ie"
 
 message = MIMEMultipart()

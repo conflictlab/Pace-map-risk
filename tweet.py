@@ -6,20 +6,12 @@ Created on Thu Dec  7 17:40:19 2023
 """
 
 
-import matplotlib.pyplot as plt
-import json
+
 import pandas as pd
-import pickle 
-import base64
-from PIL import Image
 import tweepy
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-from dateutil.relativedelta import relativedelta
-from datetime import datetime,date
-from matplotlib.font_manager import FontProperties
+from datetime import datetime
 
 count = pd.read_csv('tweet_count.csv',index_col=0)
-    
 API_key ='iKE87AGJhYpj2dlZpBba57Ohf'
 key_secret ='w3RYtCA3kQJc0wImvEYWTQu5iTY9MrA0riVBceehAVT5Zomvy6'
 access_token='1618319345720909838-axd6L7hd3q9f7ISYQ4kHrb7mH2Btw1'

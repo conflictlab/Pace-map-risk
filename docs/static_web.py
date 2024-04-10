@@ -76,10 +76,7 @@ nations with comparable conflict trajectories.'''),
                     ]),
                 dbc.Col([
                     html.Div(html.Img(src='Images/ex1_sce.png',className='sub2'))
-                    ]),
-                dbc.Col([
-                        html.Div(html.Img(src='Images/ex1_sce_p.png', className='sub3'))
-                        ])
+                    ])
                 ],style={'marginBottom': '10vh'}),
         dbc.Row([
                 dbc.Col([
@@ -87,10 +84,7 @@ nations with comparable conflict trajectories.'''),
                     ]),
                 dbc.Col([
                     html.Div(html.Img(src='Images/ex2_sce.png', className='sub2'))
-                    ]),
-                    dbc.Col([
-                        html.Div(html.Img(src='Images/ex2_sce_p.png', className='sub3'))
-                        ])
+                    ])
                 ],style={'marginBottom': '10vh'}),
         
         dbc.Row([
@@ -99,10 +93,7 @@ nations with comparable conflict trajectories.'''),
                     ]),
                 dbc.Col([
                     html.Div(html.Img(src='Images/ex3_sce.png', className='sub2'))
-                    ]),
-                dbc.Col([
-                        html.Div(html.Img(src='Images/ex3_sce_p.png', className='sub3'))
-                        ])
+                    ])
                 ],style={'marginBottom': '5vh'}),
         ]),  
     ]),

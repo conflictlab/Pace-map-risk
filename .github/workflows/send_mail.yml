@@ -1,0 +1,26 @@
+name: Send Email on Specific Dates
+
+on:
+  schedule:
+    - cron: "0 0 25,30,5,10,15 * *"
+  workflow_dispatch:
+
+jobs:
+  send_email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          pip install smtplib
+          pip install pandas
+
+      - name: Run Python script
+        run: python mail_for_tweet.py

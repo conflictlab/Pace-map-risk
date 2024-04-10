@@ -8,6 +8,9 @@ Created on Tue Nov  7 13:31:17 2023
 import pandas as pd
 from shape import Shape,finder
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.patches import FancyBboxPatch
+from matplotlib.ticker import MaxNLocator, FuncFormatter
 import numpy as np
 import geopandas as gpd
 import seaborn as sns
@@ -16,6 +19,8 @@ import matplotlib.colors as mcolors
 from matplotlib.cm import ScalarMappable
 from datetime import datetime,timedelta
 import math
+from matplotlib.font_manager import FontProperties
+from matplotlib import font_manager
 
 df = pd.read_csv("https://ucdp.uu.se/downloads/ged/ged231-csv.zip",
                   parse_dates=['date_start','date_end'],low_memory=False)
@@ -246,9 +251,18 @@ rena={'Bosnia-Herzegovina':'Bosnia and Herz.','Cambodia (Kampuchea)':'Cambodia',
 dict_sce_f = {rena[key] if key in rena else key: item for key, item in dict_sce.items()}
 with open('dict_sce.pkl', 'wb') as f:
     pickle.dump(dict_sce_f, f)
+    
 dict_sce_plot_f = {rena[key] if key in rena else key: item for key, item in dict_sce_plot.items()}
 with open('sce_dictionary.pkl', 'wb') as f:
     pickle.dump(dict_sce_plot_f, f)
+
+
+font_path = 'Poppins/Poppins-Regular.ttf'
+prop = FontProperties(fname=font_path)
+font_manager.fontManager.addfont(font_path)
+prop = font_manager.FontProperties(fname=font_path)
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = prop.get_name()
 
 # =============================================================================
 # Global Map
@@ -270,9 +284,9 @@ sm = ScalarMappable(cmap='Reds', norm=norm)
 sm.set_array([]) 
 cbar = plt.colorbar(sm, cax=cbar_ax, orientation='horizontal')
 cbar.set_ticks([*range(math.ceil(max(world['log_per_pred']))+1)])
-cbar.set_ticklabels(['1']+[f'$10^{e}$' for e in range(1,math.ceil(max(world['log_per_pred']))+1)])
+cbar.set_ticklabels(['1']+[f'$10^{e}$' for e in range(1,math.ceil(max(world['log_per_pred']))+1)],fontsize=20)
 plt.text(1.9,1.5,'Risk index', fontsize=30)
-plt.text(-8.5,0.1,'The risk index corresponds to the log sum of predicted fatalities in the next 6 months.',color='dimgray', fontdict={'style': 'italic'})
+plt.text(-8.5,0.1,'The risk index corresponds to the log sum of predicted fatalities in the next 6 months.',color='dimgray', fontdict={'style': 'italic','size':20})
 plt.savefig('Images/map.png', bbox_inches='tight')
 plt.savefig('docs/Images/map.png', bbox_inches='tight')
 plt.show()
@@ -455,27 +469,9 @@ plt.show()
 
 
 # =============================================================================
-# Specific
+# New Specific
 # =============================================================================
-pred_risk = world.sort_values('value',ascending=False)[['name','value','hist']]
-df_plot =pred_risk.set_index('name').sort_values('value',ascending=True)
-
-
-h_train=10
-h=6
-pred_tot=[]
-i = df_tot_m.columns.tolist().index(df_plot.index[-1])
-shape = Shape()
-shape.set_shape(df_tot_m.iloc[-h_train:,i]) 
-find = finder(df_tot_m.iloc[:-h,:],shape)
-find.find_patterns(min_d=0.1,select=True,metric='dtw',dtw_sel=2)
-min_d_d=0.05
-while len(find.sequences)<3:
-    min_d_d += 0.05
-    find.find_patterns(min_d=min_d_d,select=True,metric='dtw',dtw_sel=2)
-
-pred_ori = find.predict(horizon=h,plot=False,mode='mean')
-seq_pred =find.predict(horizon=h,plot=False,mode='mean',seq_out=True)
+#df_tot_m_plot=pd.read_csv('Hist.csv',parse_dates=True,index_col=(0))
 
 indo=[]
 for coun in range(1,5):
@@ -485,211 +481,390 @@ df_best = pd.DataFrame(df_plot.index[-4:])
 df_best['find']=indo
 df_best.to_csv('best.csv')
 
-plt.figure(figsize=(10, 6))
-plt.plot(df_tot_m.iloc[-h_train:,i], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.xlabel('Date', fontsize=25)
-plt.xticks(fontsize=20)  # Set x-axis tick font size
-plt.yticks(fontsize=20)
-plt.box(False)
-plt.xticks(rotation=45, ha='right')
-plt.savefig('Images/ex1.png', bbox_inches='tight')
-plt.show()
-
-plt.figure(figsize=(10, 6))
-plt.plot(df_tot_m.iloc[-h_train:,i], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.xlabel('Date', fontsize=25)
-plt.xticks(fontsize=20)  # Set x-axis tick font size
-plt.yticks(fontsize=20)
-plt.box(False)
-plt.xticks(rotation=45, ha='right')
-plt.title(str(df_best.iloc[-1][0]),color='red',fontsize=30)
-plt.savefig('docs/Images/ex1.png', bbox_inches='tight')
-plt.show()
-
-plt.figure(figsize=(15, 9))
-for i in range(len(seq_pred[:30])):
-    norm = (find.sequences[i][0] - find.sequences[i][0].min()) / (find.sequences[i][0].max()-find.sequences[i][0].min())
-    norm.index = range(12-len(norm),12)
-    pre = pd.Series([norm.iloc[-1]]+seq_pred.iloc[i,:].tolist())
-    pre.index = range(11,18)
-    plt.plot(norm,alpha=0.5,color='black')
-    plt.plot(pre,alpha=0.3,color='#E41B17')
-pre = pd.Series([shape.values[-1]]+pred_ori.iloc[:,0].tolist())
-pre.index = range(11,18)    
-plt.plot(pre,marker='o',alpha=1,linewidth=5,color='r',label='Mean value of Matches')
-if max(pre)>1:
-    plt.ylim(0,max(pre)+0.1*max(pre))
-else:
-    plt.ylim(0,1)
-plt.xticks([*range(18)],[f't-{i}' for i in range(1,12)][::-1]+['t']+[f't+{i}' for i in range(1,7)])
-plt.xticks([*range(18)],['']*12+[f't+{i}' for i in range(1,7)])
-plt.box(False)
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-plt.xticks(fontsize=20)  # Set x-axis tick font size
-plt.yticks(fontsize=20)
-plt.legend(fontsize=20)
-plt.savefig('Images/ex1_all.png', bbox_inches='tight')
-plt.show()
-    
-i = df_tot_m.columns.tolist().index(df_plot.index[-1])
-name_sc=['Decrease','Stable','Increase']
-col = [(216/255, 134/255, 141/255),'orangered','darkred']
-
-fig, axs = plt.subplots(3, 1, figsize=(10, 15))
-
-for k in range(3):
-    axs[k].plot(df_next[k].iloc[:, i], color='black', linewidth=3)
-    axs[k].plot(df_next[k].iloc[-7:, i], color=col[k], linewidth=8)
-    axs[k].plot(df_next[k].iloc[-6:, i], color=col[k], marker='o', linewidth=0)
-    axs[k].set_frame_on(False)
-    axs[k].grid(axis='y', linestyle='--', alpha=0.7)
-    axs[k].tick_params(axis='y', labelsize=30)
-    axs[k].set_xticks([])
-
-plt.tight_layout()
-plt.savefig('Images/ex1_sce.png', bbox_inches='tight')
-#plt.savefig('docs/Images/ex1_sce.png', bbox_inches='tight')
-plt.show()
-    
-fig, axs = plt.subplots(3, 1, figsize=(10, 15))
-for k in range(3):
-    axs[k].plot(df_next[k].iloc[:, i], color='black', linewidth=3)
-    axs[k].plot(df_next[k].iloc[-7:, i], color=col[k], linewidth=8)
-    axs[k].plot(df_next[k].iloc[-6:, i], color=col[k], marker='o', linewidth=0)
-    axs[k].set_frame_on(False)
-    axs[k].grid(axis='y', linestyle='--', alpha=0.7)
-    axs[k].tick_params(axis='y', labelsize=30)
-    axs[k].set_xticks([])
-plt.tight_layout()
-plt.savefig('docs/Images/ex1_sce.png', bbox_inches='tight')
-plt.show()
-    
-
-fig, axs = plt.subplots(3, 1, figsize=(10, 15))
-for k in range(3):
-    axs[k].text(0.2,0.5, s=f"{name_sc[k]} - pr ={df_perc.iloc[k, i]}", color=col[k],fontsize=40)
-    axs[k].set_frame_on(False)
-    axs[k].set_xticks([])
-    axs[k].set_yticks([])
-plt.tight_layout()
-plt.savefig('docs/Images/ex1_sce_p.png', bbox_inches='tight')
-plt.show()
-
-
-for coun in range(2,5):
-    h_train=10
-    h=6
-    pred_tot=[]
-    i = df_tot_m.columns.tolist().index(df_plot.index[-coun])
-    shape = Shape()
-    shape.set_shape(df_tot_m.iloc[-h_train:,i]) 
-    find = finder(df_tot_m.iloc[:-h,:],shape)
-    find.find_patterns(min_d=0.1,select=True,metric='dtw',dtw_sel=2)
-    min_d_d=0.05
-    while len(find.sequences)<3:
-        min_d_d += 0.05
-        find.find_patterns(min_d=min_d_d,select=True,metric='dtw',dtw_sel=2)
-    pred_ori = find.predict(horizon=h,plot=False,mode='mean')
-    #pred_ori = pred_ori*(df_tot_m.iloc[-h_train:,i].max()-df_tot_m.iloc[-h_train:,i].min())+df_tot_m.iloc[-h_train:,i].min()
-    seq_pred =find.predict(horizon=h,plot=False,mode='mean',seq_out=True)
-    
-    plt.figure(figsize=(15, 9))
-    for j in range(len(seq_pred[:30])):
-        norm = (find.sequences[j][0] - find.sequences[j][0].min()) / (find.sequences[j][0].max()-find.sequences[j][0].min())
-        norm.index = range(12-len(norm),12)
-        pre = pd.Series([norm.iloc[-1]]+seq_pred.iloc[j,:].tolist())
-        pre.index = range(11,18)
-        plt.plot(norm,alpha=0.5,color='black')
-        plt.plot(pre,alpha=0.3,color='#E41B17')
-    pre = pd.Series([shape.values[-1]]+pred_ori.iloc[:,0].tolist())
-    pre.index = range(11,18)    
-    plt.plot(pre,marker='o',alpha=1,linewidth=5,color='r')
-    if max(pre)>1:
-        plt.ylim(0,max(pre)+0.1*max(pre))
+def format_ticks(x, pos):
+    if x == 0:
+        return ''
     else:
-        plt.ylim(0,1)
-    plt.xticks([*range(18)],[f't-{i}' for i in range(1,12)][::-1]+['t']+[f't+{i}' for i in range(1,7)])
-    plt.xticks([*range(18)],['']*12+[f't+{i}' for i in range(1,7)])
-    plt.box(False)
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.xticks(fontsize=16)  # Set x-axis tick font size
-    plt.yticks(fontsize=16)
-    plt.savefig(f'Images/ex{coun}_all.png', bbox_inches='tight')
-    plt.show()
+        return '{:d}'.format(int(x))
+
+def plot_horizontal_bar(df,names,ax,typ,maxi):
+    if typ=='reg':
+        li=['Africa','Americas','Asia','Europe','Middle East']
+    elif typ=='dec':
+        li=['90-2000','2000-2010','2010-2020','2020-Now']
+    else:
+        li=['<10','10-100','100-1000','>1000']
+    for i,name in enumerate(li):
+        if name in df.index:
+            if df[name]>0:
+                rect = FancyBboxPatch((0, i-0.25),width=df[name],height=0.5, boxstyle="round,pad=-0.0040,rounding_size=0.03", ec="none", fc='#808080', mutation_aspect=4)
+                ax.add_patch(rect)
+            else:
+                pass
+        else:
+            pass
+        
+    if maxi>5:
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=4, integer=True))
+    elif (maxi>2)&(maxi<=5):
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=3, integer=True))
+    else:
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=2, integer=True))
+    ax.tick_params(axis='x', labelsize=20)
+    formatter = FuncFormatter(format_ticks)
+    ax.xaxis.set_major_formatter(formatter)
+    ax.set_yticks([*range(len(li))],li,fontsize=20,color='#808080')
+    ax.set_frame_on('y')
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)  
+    ax.set_ylim(-0.5,len(li)-0.5)
+    ax.set_xlim(0,maxi)
+    ax.set_title(names,fontsize=30,pad=20,color='#808080')  
+    ax.grid(axis='x', linestyle='--', alpha=0.7,color='#808080')
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label1.set_color('gray')
+
+pred_risk = world.sort_values('value',ascending=False)[['name','value','hist']]
+df_plot =pred_risk.set_index('name').sort_values('value',ascending=True)
+h_train=10
+h=6
+for coun in range(1,5):
+    sub_name = df_plot.index[-coun]
     
-    plt.figure(figsize=(10, 6))
-    plt.plot(df_tot_m.iloc[-h_train:,i], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.xlabel('Date', fontsize=25)
-    plt.xticks(fontsize=20)  # Set x-axis tick font size
-    plt.yticks(fontsize=20)
-    plt.box(False)
-    plt.xticks(rotation=45, ha='right')
+    if sub_name in rena:
+        sub_name = rena[sub_name]
+     
+    fig,ax = plt.subplots(1, 1, figsize=(10, 6))
+    ax.plot(df_tot_m_plot.loc[:,sub_name], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
+    ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%b %y'))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=3, maxticks=8))
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    ax.tick_params(axis='x', labelsize=25)
+    ax.tick_params(axis='y', labelsize=25)
+    #ax.set_title(df_tot_m_plot.loc[:,sub_name].name, fontsize=40, font='Poppins')
+    ax.set_frame_on(False)
+    plt.tight_layout()
     plt.savefig(f'Images/ex{coun}.png', bbox_inches='tight')
     plt.show()
     
-    plt.figure(figsize=(10, 6))
-    plt.plot(df_tot_m.iloc[-h_train:,i], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
-    plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.xlabel('Date', fontsize=25)
-    plt.xticks(fontsize=20)  # Set x-axis tick font size
-    plt.yticks(fontsize=20)
-    plt.box(False)
-    plt.xticks(rotation=45, ha='right')
-    plt.title(str(df_best.iloc[-coun][0]),color='red',fontsize=30)
-    plt.savefig(f'docs/Images/ex{coun}.png', bbox_inches='tight')
+    
+    # fig,ax = plt.subplots(1, 3, figsize=(12, 6))
+    # maxi=max([dict_sce[sub_name][0]['Region'].value_counts().max(),dict_sce[sub_name][0]['Decade'].value_counts().max(),dict_sce[sub_name][0]['Scale'].value_counts().max()])
+    # plot_horizontal_bar(dict_sce[sub_name][0]['Region'].value_counts(), 'Where ?', ax[0],'reg',maxi)
+    # plot_horizontal_bar(dict_sce[sub_name][0]['Decade'].value_counts(), 'When ?', ax[1],'dec',maxi)
+    # plot_horizontal_bar(dict_sce[sub_name][0]['Scale'].value_counts(), 'Sum of Fatalities ?', ax[2],'sca',maxi)
+    # plt.tight_layout()
+    # plt.savefig(f'Images/ex{coun}_all.png', bbox_inches='tight')
+    # plt.show()
+    
+    fig,ax = plt.subplots(2, 2, figsize=(12, 6))
+    ax = ax.flatten()
+    for c in range(4):
+        ax[c].plot(dict_m[sub_name][c][0], marker='o', color='#808080', linestyle='-', linewidth=2, markersize=8)
+        ax[c].xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%b %y'))
+        ax[c].xaxis.set_major_locator(mdates.AutoDateLocator(minticks=4, maxticks=4))
+        ax[c].grid(axis='y', linestyle='--', alpha=0.7)
+        ax[c].tick_params(axis='x', labelsize=15,color='#808080')
+        ax[c].tick_params(axis='y', labelsize=15,color='#808080')
+        ax[c].set_title(dict_m[sub_name][c][0].name, fontsize=20, font='Poppins',color='#808080')
+        ax[c].set_frame_on(False)
+    plt.tight_layout()
+    plt.savefig(f'Images/ex{coun}_all.png', bbox_inches='tight')
     plt.show()
     
-    fig, axs = plt.subplots(3, 1, figsize=(10, 15))
-    for k in range(3):
-        if df_next[k].iloc[:, i].isna().all() :
-            axs[k].set_frame_on(False)
-            axs[k].set_xticks([])
-            axs[k].set_yticks([])
-        else:
-            axs[k].plot(df_next[k].iloc[:, i], color='black', linewidth=3)
-            axs[k].plot(df_next[k].iloc[-7:, i], color=col[k], linewidth=8)
-            axs[k].plot(df_next[k].iloc[-6:, i], color=col[k], marker='o', linewidth=0)
-            axs[k].set_frame_on(False)
-            axs[k].grid(axis='y', linestyle='--', alpha=0.7)
-            axs[k].tick_params(axis='y', labelsize=30)
-            axs[k].set_xticks([])
+    
+    if len(dict_sce[sub_name][1])>2:
+        fig, ax = plt.subplot_mosaic([[0,0,0,0,0,3],
+                                      [1,1,1,1,1,4],
+                                      [2,2,2,2,2,5]], figsize=(10, 8))
+    elif len(dict_sce[sub_name][1])==2:
+        fig, ax = plt.subplot_mosaic([[2,2,2,2,2,9],
+                                      [0,0,0,0,0,3],
+                                      [0,0,0,0,0,3],
+                                      [0,0,0,0,0,3],
+                                      [5,5,5,5,5,6],
+                                      [1,1,1,1,1,4],
+                                      [1,1,1,1,1,4],
+                                      [1,1,1,1,1,4],
+                                      [7,7,7,7,7,8]], figsize=(10, 8))    
+        ax[6].axis('off')
+        ax[7].axis('off')
+        ax[8].axis('off')
+        ax[9].axis('off')
+    else :
+        fig, ax = plt.subplot_mosaic([[1,1,1,1,1,4],
+                                      [0,0,0,0,0,3],
+                                      [2,2,2,2,2,5]], figsize=(10, 8))    
+    for c in range(3):
+        try:
+            if int(dict_sce[sub_name][1].iloc[pd.Series(dict_sce[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100)>=50:
+                colu="#df2226"
+            else:
+                sup1=hex(34+(50-int(dict_sce[sub_name][1].iloc[pd.Series(dict_sce[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100))*3)[2:]
+                sup2=hex(38+(50-int(dict_sce[sub_name][1].iloc[pd.Series(dict_sce[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100))*3)[2:]
+                colu='#df'+str(sup1)+str(sup2)
+            scen = dict_sce[sub_name][1].iloc[pd.Series(dict_sce[sub_name][1].index).sort_values(ascending=False).index[c],:].tolist()
+            b = (df_tot_m_plot.loc[:,sub_name] - df_tot_m_plot.loc[:,sub_name].min())/(df_tot_m_plot.loc[:,sub_name].max()-df_tot_m_plot.loc[:,sub_name].min())
+            scen = pd.Series(b.tolist()+scen)
+            scen = scen*(df_tot_m_plot.loc[:,sub_name].max()-df_tot_m_plot.loc[:,sub_name].min()) + df_tot_m_plot.loc[:,sub_name].min()
+            ax[c].plot(scen, color='gray', linestyle='-', linewidth=2)
+            ax[c].plot(scen.iloc[-7:], color=colu, linestyle='-', linewidth=5)
+            ax[c].set_frame_on(False)
+            ax[c].set_xticks([10,11,12,13,14,15],[f't+{i}' if i not in [1, 3, 5] else '' for i in range(1, 7)])
+            ax[c].yaxis.set_major_locator(MaxNLocator(nbins=4, integer=True))
+            ax[c].tick_params(axis='y', labelsize=20)
+            ax[c].tick_params(axis='x', labelsize=20,rotation=30)
+            ax[c].grid('y',alpha=0.5)
+            ax[c].spines['top'].set_visible(False)
+            ax[c].spines['right'].set_visible(False)  
+            ax[c].spines['bottom'].set_visible(False)
+            ax[c].spines['left'].set_visible(False)
+            ax[c+3].text(0.1,0.4,f'Freq = {int(dict_sce[sub_name][1].iloc[pd.Series(dict_sce[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100)}%',fontsize=30,color=colu)
+            ax[c+3].set_frame_on(False)
+            ax[c+3].set_xticks([])
+            ax[c+3].set_yticks([])
+        except:
+            ax[c].axis('off')
+            ax[c+3].axis('off')
+    
     plt.tight_layout()
-    plt.savefig(f'docs/Images/ex{coun}_sce.png', bbox_inches='tight')
     plt.savefig(f'Images/ex{coun}_sce.png', bbox_inches='tight')
     plt.show()
+
+# =============================================================================
+# Specific
+# =============================================================================
+# pred_risk = world.sort_values('value',ascending=False)[['name','value','hist']]
+# df_plot =pred_risk.set_index('name').sort_values('value',ascending=True)
+
+
+# h_train=10
+# h=6
+# pred_tot=[]
+# i = df_tot_m.columns.tolist().index(df_plot.index[-1])
+# shape = Shape()
+# shape.set_shape(df_tot_m.iloc[-h_train:,i]) 
+# find = finder(df_tot_m.iloc[:-h,:],shape)
+# find.find_patterns(min_d=0.1,select=True,metric='dtw',dtw_sel=2)
+# min_d_d=0.05
+# while len(find.sequences)<3:
+#     min_d_d += 0.05
+#     find.find_patterns(min_d=min_d_d,select=True,metric='dtw',dtw_sel=2)
+
+# pred_ori = find.predict(horizon=h,plot=False,mode='mean')
+# seq_pred =find.predict(horizon=h,plot=False,mode='mean',seq_out=True)
+
+# indo=[]
+# for coun in range(1,5):
+#     indo.append(df_tot_m.columns.tolist().index(df_plot.index[-coun]))
+# indo.reverse()
+# df_best = pd.DataFrame(df_plot.index[-4:])
+# df_best['find']=indo
+# df_best.to_csv('best.csv')
+
+# plt.figure(figsize=(10, 6))
+# plt.plot(df_tot_m.iloc[-h_train:,i], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
+# plt.grid(axis='y', linestyle='--', alpha=0.7)
+# plt.xlabel('Date', fontsize=25)
+# plt.xticks(fontsize=20)  # Set x-axis tick font size
+# plt.yticks(fontsize=20)
+# plt.box(False)
+# plt.xticks(rotation=45, ha='right')
+# plt.savefig('Images/ex1.png', bbox_inches='tight')
+# plt.show()
+
+# plt.figure(figsize=(10, 6))
+# plt.plot(df_tot_m.iloc[-h_train:,i], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
+# plt.grid(axis='y', linestyle='--', alpha=0.7)
+# plt.xlabel('Date', fontsize=25)
+# plt.xticks(fontsize=20)  # Set x-axis tick font size
+# plt.yticks(fontsize=20)
+# plt.box(False)
+# plt.xticks(rotation=45, ha='right')
+# plt.title(str(df_best.iloc[-1][0]),color='red',fontsize=30)
+# plt.savefig('docs/Images/ex1.png', bbox_inches='tight')
+# plt.show()
+
+# plt.figure(figsize=(15, 9))
+# for i in range(len(seq_pred[:30])):
+#     norm = (find.sequences[i][0] - find.sequences[i][0].min()) / (find.sequences[i][0].max()-find.sequences[i][0].min())
+#     norm.index = range(12-len(norm),12)
+#     pre = pd.Series([norm.iloc[-1]]+seq_pred.iloc[i,:].tolist())
+#     pre.index = range(11,18)
+#     plt.plot(norm,alpha=0.5,color='black')
+#     plt.plot(pre,alpha=0.3,color='#E41B17')
+# pre = pd.Series([shape.values[-1]]+pred_ori.iloc[:,0].tolist())
+# pre.index = range(11,18)    
+# plt.plot(pre,marker='o',alpha=1,linewidth=5,color='r',label='Mean value of Matches')
+# if max(pre)>1:
+#     plt.ylim(0,max(pre)+0.1*max(pre))
+# else:
+#     plt.ylim(0,1)
+# plt.xticks([*range(18)],[f't-{i}' for i in range(1,12)][::-1]+['t']+[f't+{i}' for i in range(1,7)])
+# plt.xticks([*range(18)],['']*12+[f't+{i}' for i in range(1,7)])
+# plt.box(False)
+# plt.grid(axis='y', linestyle='--', alpha=0.7)
+# plt.xticks(fontsize=20)  # Set x-axis tick font size
+# plt.yticks(fontsize=20)
+# plt.legend(fontsize=20)
+# plt.savefig('Images/ex1_all.png', bbox_inches='tight')
+# plt.show()
     
-    fig, axs = plt.subplots(3, 1, figsize=(10, 15))
-    for k in range(3):
-        if df_next[k].iloc[:, i].isna().all() :
-            axs[k].set_frame_on(False)
-            axs[k].set_xticks([])
-            axs[k].set_yticks([])
-        else:
-            axs[k].plot(df_next[k].iloc[:, i], color='black', linewidth=3)
-            axs[k].plot(df_next[k].iloc[-7:, i], color=col[k], linewidth=8)
-            axs[k].plot(df_next[k].iloc[-6:, i], color=col[k], marker='o', linewidth=0)
-            axs[k].set_frame_on(False)
-            axs[k].grid(axis='y', linestyle='--', alpha=0.7)
-            axs[k].tick_params(axis='y', labelsize=30)
-            axs[k].set_xticks([])
-    plt.tight_layout()
+# i = df_tot_m.columns.tolist().index(df_plot.index[-1])
+# name_sc=['Decrease','Stable','Increase']
+# col = [(216/255, 134/255, 141/255),'orangered','darkred']
+
+# fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+
+# for k in range(3):
+#     axs[k].plot(df_next[k].iloc[:, i], color='black', linewidth=3)
+#     axs[k].plot(df_next[k].iloc[-7:, i], color=col[k], linewidth=8)
+#     axs[k].plot(df_next[k].iloc[-6:, i], color=col[k], marker='o', linewidth=0)
+#     axs[k].set_frame_on(False)
+#     axs[k].grid(axis='y', linestyle='--', alpha=0.7)
+#     axs[k].tick_params(axis='y', labelsize=30)
+#     axs[k].set_xticks([])
+
+# plt.tight_layout()
+# plt.savefig('Images/ex1_sce.png', bbox_inches='tight')
+# #plt.savefig('docs/Images/ex1_sce.png', bbox_inches='tight')
+# plt.show()
     
-    plt.show()
+# fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+# for k in range(3):
+#     axs[k].plot(df_next[k].iloc[:, i], color='black', linewidth=3)
+#     axs[k].plot(df_next[k].iloc[-7:, i], color=col[k], linewidth=8)
+#     axs[k].plot(df_next[k].iloc[-6:, i], color=col[k], marker='o', linewidth=0)
+#     axs[k].set_frame_on(False)
+#     axs[k].grid(axis='y', linestyle='--', alpha=0.7)
+#     axs[k].tick_params(axis='y', labelsize=30)
+#     axs[k].set_xticks([])
+# plt.tight_layout()
+# plt.savefig('docs/Images/ex1_sce.png', bbox_inches='tight')
+# plt.show()
     
-    fig, axs = plt.subplots(3, 1, figsize=(10, 15))
-    for k in range(3):
-        axs[k].text(0.2,0.5, s=f"{name_sc[k]} - pr ={df_perc.iloc[:, i].loc[k]}", color=col[k],fontsize=40)
-        axs[k].set_frame_on(False)
-        axs[k].set_xticks([])
-        axs[k].set_yticks([])
-    plt.tight_layout()
-    plt.savefig(f'docs/Images/ex{coun}_sce_p.png', bbox_inches='tight')
-    plt.show()
+
+# fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+# for k in range(3):
+#     axs[k].text(0.2,0.5, s=f"{name_sc[k]} - pr ={df_perc.iloc[k, i]}", color=col[k],fontsize=40)
+#     axs[k].set_frame_on(False)
+#     axs[k].set_xticks([])
+#     axs[k].set_yticks([])
+# plt.tight_layout()
+# plt.savefig('docs/Images/ex1_sce_p.png', bbox_inches='tight')
+# plt.show()
+
+
+# for coun in range(2,5):
+#     h_train=10
+#     h=6
+#     pred_tot=[]
+#     i = df_tot_m.columns.tolist().index(df_plot.index[-coun])
+#     shape = Shape()
+#     shape.set_shape(df_tot_m.iloc[-h_train:,i]) 
+#     find = finder(df_tot_m.iloc[:-h,:],shape)
+#     find.find_patterns(min_d=0.1,select=True,metric='dtw',dtw_sel=2)
+#     min_d_d=0.05
+#     while len(find.sequences)<3:
+#         min_d_d += 0.05
+#         find.find_patterns(min_d=min_d_d,select=True,metric='dtw',dtw_sel=2)
+#     pred_ori = find.predict(horizon=h,plot=False,mode='mean')
+#     #pred_ori = pred_ori*(df_tot_m.iloc[-h_train:,i].max()-df_tot_m.iloc[-h_train:,i].min())+df_tot_m.iloc[-h_train:,i].min()
+#     seq_pred =find.predict(horizon=h,plot=False,mode='mean',seq_out=True)
     
+#     plt.figure(figsize=(15, 9))
+#     for j in range(len(seq_pred[:30])):
+#         norm = (find.sequences[j][0] - find.sequences[j][0].min()) / (find.sequences[j][0].max()-find.sequences[j][0].min())
+#         norm.index = range(12-len(norm),12)
+#         pre = pd.Series([norm.iloc[-1]]+seq_pred.iloc[j,:].tolist())
+#         pre.index = range(11,18)
+#         plt.plot(norm,alpha=0.5,color='black')
+#         plt.plot(pre,alpha=0.3,color='#E41B17')
+#     pre = pd.Series([shape.values[-1]]+pred_ori.iloc[:,0].tolist())
+#     pre.index = range(11,18)    
+#     plt.plot(pre,marker='o',alpha=1,linewidth=5,color='r')
+#     if max(pre)>1:
+#         plt.ylim(0,max(pre)+0.1*max(pre))
+#     else:
+#         plt.ylim(0,1)
+#     plt.xticks([*range(18)],[f't-{i}' for i in range(1,12)][::-1]+['t']+[f't+{i}' for i in range(1,7)])
+#     plt.xticks([*range(18)],['']*12+[f't+{i}' for i in range(1,7)])
+#     plt.box(False)
+#     plt.grid(axis='y', linestyle='--', alpha=0.7)
+#     plt.xticks(fontsize=16)  # Set x-axis tick font size
+#     plt.yticks(fontsize=16)
+#     plt.savefig(f'Images/ex{coun}_all.png', bbox_inches='tight')
+#     plt.show()
     
+#     plt.figure(figsize=(10, 6))
+#     plt.plot(df_tot_m.iloc[-h_train:,i], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
+#     plt.grid(axis='y', linestyle='--', alpha=0.7)
+#     plt.xlabel('Date', fontsize=25)
+#     plt.xticks(fontsize=20)  # Set x-axis tick font size
+#     plt.yticks(fontsize=20)
+#     plt.box(False)
+#     plt.xticks(rotation=45, ha='right')
+#     plt.savefig(f'Images/ex{coun}.png', bbox_inches='tight')
+#     plt.show()
+    
+#     plt.figure(figsize=(10, 6))
+#     plt.plot(df_tot_m.iloc[-h_train:,i], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
+#     plt.grid(axis='y', linestyle='--', alpha=0.7)
+#     plt.xlabel('Date', fontsize=25)
+#     plt.xticks(fontsize=20)  # Set x-axis tick font size
+#     plt.yticks(fontsize=20)
+#     plt.box(False)
+#     plt.xticks(rotation=45, ha='right')
+#     plt.title(str(df_best.iloc[-coun][0]),color='red',fontsize=30)
+#     plt.savefig(f'docs/Images/ex{coun}.png', bbox_inches='tight')
+#     plt.show()
+    
+#     fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+#     for k in range(3):
+#         if df_next[k].iloc[:, i].isna().all() :
+#             axs[k].set_frame_on(False)
+#             axs[k].set_xticks([])
+#             axs[k].set_yticks([])
+#         else:
+#             axs[k].plot(df_next[k].iloc[:, i], color='black', linewidth=3)
+#             axs[k].plot(df_next[k].iloc[-7:, i], color=col[k], linewidth=8)
+#             axs[k].plot(df_next[k].iloc[-6:, i], color=col[k], marker='o', linewidth=0)
+#             axs[k].set_frame_on(False)
+#             axs[k].grid(axis='y', linestyle='--', alpha=0.7)
+#             axs[k].tick_params(axis='y', labelsize=30)
+#             axs[k].set_xticks([])
+#     plt.tight_layout()
+#     plt.savefig(f'docs/Images/ex{coun}_sce.png', bbox_inches='tight')
+#     plt.savefig(f'Images/ex{coun}_sce.png', bbox_inches='tight')
+#     plt.show()
+    
+#     fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+#     for k in range(3):
+#         if df_next[k].iloc[:, i].isna().all() :
+#             axs[k].set_frame_on(False)
+#             axs[k].set_xticks([])
+#             axs[k].set_yticks([])
+#         else:
+#             axs[k].plot(df_next[k].iloc[:, i], color='black', linewidth=3)
+#             axs[k].plot(df_next[k].iloc[-7:, i], color=col[k], linewidth=8)
+#             axs[k].plot(df_next[k].iloc[-6:, i], color=col[k], marker='o', linewidth=0)
+#             axs[k].set_frame_on(False)
+#             axs[k].grid(axis='y', linestyle='--', alpha=0.7)
+#             axs[k].tick_params(axis='y', labelsize=30)
+#             axs[k].set_xticks([])
+#     plt.tight_layout()
+    
+#     plt.show()
+    
+#     fig, axs = plt.subplots(3, 1, figsize=(10, 15))
+#     for k in range(3):
+#         axs[k].text(0.2,0.5, s=f"{name_sc[k]} - pr ={df_perc.iloc[:, i].loc[k]}", color=col[k],fontsize=40)
+#         axs[k].set_frame_on(False)
+#         axs[k].set_xticks([])
+#         axs[k].set_yticks([])
+#     plt.tight_layout()
+#     plt.savefig(f'docs/Images/ex{coun}_sce_p.png', bbox_inches='tight')
+#     plt.show()
     
 
 

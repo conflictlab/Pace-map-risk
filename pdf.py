@@ -162,10 +162,8 @@ c.drawString(letter[0] - right_margin - c.stringWidth('Contact', "Poppins", 11),
 c.showPage()
 
 df_best = pd.read_csv('best.csv',index_col=0)
-df_perc = pd.read_csv('perc.csv',parse_dates=True,index_col=(0))
 
 first = df_best.iloc[-1][0]
-perc = df_perc.iloc[:,df_best.iloc[-1][1]]
 title_text = f'{first}'
 title_font = "Poppins-Bold"  
 title_font_size = 13
@@ -174,51 +172,75 @@ c.setFont(title_font, title_font_size)
 c.setFillColor(title_color)
 c.drawString(30, 760, title_text)
 
+# sub_image2 = 'Images/ex1.png'
+# sub_image3 = 'Images/ex1_all.png'
+# sub_image4 = 'Images/ex1_sce.png'
+# c.drawImage(sub_image2, x=10, y=610, width=200,height=120, mask='auto')
+# c.drawImage(sub_image3, x=210, y=610, width=240,height=120, mask='auto') 
+# c.drawImage(sub_image4, x=450, y=610, width=150,height=120, mask='auto')  
+
+# subtitle_font_size = 10
+# c.setFont(subtitle_font, subtitle_font_size)
+# t_1 = "Fatalities over last 10 months"
+# c.setFillColor(subtitle_color)
+# c.drawCentredString(110, 740, t_1)
+# t_3 = "Closest historical matches"
+# c.setFillColor(subtitle_color)
+# c.drawCentredString(320, 740, t_3)
+# t_4 = "Scenarios"
+# c.setFillColor(subtitle_color)
+# c.drawCentredString(525, 740, t_4)
+
+
+# first = df_best.iloc[-2][0]
+# title_text = f'{first}'
+# title_font = "Poppins-Bold"  
+# title_font_size = 13
+# title_color = HexColor("#df2226")
+# c.setFont(title_font, title_font_size)
+# c.setFillColor(title_color)
+# c.drawString(30, 580, title_text)
+
+# sub_image2 = 'Images/ex2.png'
+# sub_image3 = 'Images/ex2_all.png'
+# sub_image4 = 'Images/ex2_sce.png'
+# c.drawImage(sub_image2, x=10, y=425, width=200,height=120, mask='auto')
+# c.drawImage(sub_image3, x=210, y=425, width=240,height=120, mask='auto')
+# c.drawImage(sub_image4, x=450, y=425, width=150,height=120, mask='auto')  
+
+# subtitle_font_size = 10
+# c.setFont(subtitle_font, subtitle_font_size)
+# t_1 = "Fatalities over last 10 months"
+# c.setFillColor(subtitle_color)
+# c.drawCentredString(110, 560, t_1)
+# t_3 = "Closest historical matches"
+# c.setFillColor(subtitle_color)
+# c.drawCentredString(320, 560, t_3)
+# t_4 = "Scenarios"
+# c.setFillColor(subtitle_color)
+# c.drawCentredString(525, 560, t_4)
 
 sub_image2 = 'Images/ex1.png'
 sub_image3 = 'Images/ex1_all.png'
 sub_image4 = 'Images/ex1_sce.png'
-c.drawImage(sub_image2, x=30, y=600, width=160,height=120, mask='auto')
-c.drawImage(sub_image3, x=220, y=600, width=200,height=120, mask='auto') 
-c.drawImage(sub_image4, x=440, y=590, width=100,height=140, mask='auto')  
-
-subtitle_font_size = 8
-c.setFont(subtitle_font, subtitle_font_size)
-t_1 = "Decrease"
-c.setFillColor((216/255, 134/255, 141/255))
-c.drawCentredString(565, 710, t_1)
-t_1 =f'pr={perc.iloc[0]}%'
-c.setFillColor((216/255, 134/255, 141/255))
-c.drawCentredString(565, 695, t_1)
-t_3 = "Stable"
-c.setFillColor('orangered')
-c.drawCentredString(565, 665, t_3)
-t_3 = f"pr={perc.iloc[1]}%"
-c.setFillColor('orangered')
-c.drawCentredString(565, 650, t_3)
-t_4 = "Increase"
-c.setFillColor('darkred')
-c.drawCentredString(565, 620, t_4)
-t_4 = f"pr={perc.iloc[2]}%"
-c.setFillColor('darkred')
-c.drawCentredString(565, 605, t_4)
-
+c.drawImage(sub_image2, x=10, y=610, width=200,height=120, mask='auto')
+c.drawImage(sub_image4, x=210, y=610, width=150,height=120, mask='auto') 
+c.drawImage(sub_image3, x=370, y=610, width=240,height=120, mask='auto')  
 
 subtitle_font_size = 10
 c.setFont(subtitle_font, subtitle_font_size)
 t_1 = "Fatalities over last 10 months"
 c.setFillColor(subtitle_color)
 c.drawCentredString(110, 740, t_1)
-t_3 = "Closest historical matches"
+t_3 = "Scenarios"
 c.setFillColor(subtitle_color)
-c.drawCentredString(320, 740, t_3)
-t_4 = "Scenarios"
+c.drawCentredString(290, 740, t_3)
+t_4 = "Closest historical matches"
 c.setFillColor(subtitle_color)
-c.drawCentredString(525, 740, t_4)
+c.drawCentredString(485, 740, t_4)
 
 
 first = df_best.iloc[-2][0]
-perc = df_perc.iloc[:,df_best.iloc[-2][1]]
 title_text = f'{first}'
 title_font = "Poppins-Bold"  
 title_font_size = 13
@@ -227,52 +249,38 @@ c.setFont(title_font, title_font_size)
 c.setFillColor(title_color)
 c.drawString(30, 580, title_text)
 
-
 sub_image2 = 'Images/ex2.png'
 sub_image3 = 'Images/ex2_all.png'
 sub_image4 = 'Images/ex2_sce.png'
-c.drawImage(sub_image2, x=30, y=420, width=160,height=120, mask='auto')
-c.drawImage(sub_image3, x=220, y=420, width=200,height=120, mask='auto')
-c.drawImage(sub_image4, x=440, y=410, width=100,height=140, mask='auto')  
-
-subtitle_font_size = 8
-c.setFont(subtitle_font, subtitle_font_size)
-t_1 = "Decrease"
-c.setFillColor((216/255, 134/255, 141/255))
-c.drawCentredString(565, 530, t_1)
-t_1 =f'pr={perc.iloc[0]}%'
-c.setFillColor((216/255, 134/255, 141/255))
-c.drawCentredString(565, 515, t_1)
-t_3 = "Stable"
-c.setFillColor('orangered')
-c.drawCentredString(565, 485, t_3)
-t_3 = f"pr={perc.iloc[1]}%"
-c.setFillColor('orangered')
-c.drawCentredString(565, 470, t_3)
-t_4 = "Increase"
-c.setFillColor('darkred')
-c.drawCentredString(565, 440, t_4)
-t_4 = f"pr={perc.iloc[2]}%"
-c.setFillColor('darkred')
-c.drawCentredString(565, 425, t_4)
-
+c.drawImage(sub_image2, x=10, y=425, width=200,height=120, mask='auto')
+c.drawImage(sub_image4, x=210, y=425, width=150,height=120, mask='auto') 
+c.drawImage(sub_image3, x=370, y=425, width=240,height=120, mask='auto')    
 
 subtitle_font_size = 10
 c.setFont(subtitle_font, subtitle_font_size)
 t_1 = "Fatalities over last 10 months"
 c.setFillColor(subtitle_color)
 c.drawCentredString(110, 560, t_1)
-t_3 = "Closest historical matches"
+t_3 = "Scenarios"
 c.setFillColor(subtitle_color)
-c.drawCentredString(320, 560, t_3)
-t_4 = "Scenarios"
+c.drawCentredString(290, 560, t_3)
+t_4 = "Closest historical matches"
 c.setFillColor(subtitle_color)
-c.drawCentredString(525, 560, t_4)
+c.drawCentredString(485, 560, t_4)
+
+
+
+
+
+
+
+
+
+
 
 
 
 first = df_best.iloc[-3][0]
-perc = df_perc.iloc[:,df_best.iloc[-3][1]]
 title_text = f'{first}'
 title_font = "Poppins-Bold"  
 title_font_size = 13
@@ -285,31 +293,10 @@ c.drawString(30, 400, title_text)
 sub_image2 = 'Images/ex3.png'
 sub_image3 = 'Images/ex3_all.png'
 sub_image4 = 'Images/ex3_sce.png'
-c.drawImage(sub_image2, x=30, y=250, width=160,height=120, mask='auto')
-c.drawImage(sub_image3, x=220, y=250, width=200,height=120, mask='auto')
-c.drawImage(sub_image4, x=440, y=240, width=100,height=140, mask='auto') 
+c.drawImage(sub_image2, x=10, y=250, width=200,height=120, mask='auto')
+c.drawImage(sub_image3, x=210, y=250, width=240,height=120, mask='auto')
+c.drawImage(sub_image4, x=450, y=250, width=150,height=120, mask='auto') 
 
-subtitle_font_size = 8
-c.setFont(subtitle_font, subtitle_font_size)
-t_1 = "Decrease"
-c.setFillColor((216/255, 134/255, 141/255))
-c.drawCentredString(565, 360, t_1)
-t_1 =f'pr={perc.iloc[0]}%'
-c.setFillColor((216/255, 134/255, 141/255))
-c.drawCentredString(565, 345, t_1)
-t_3 = "Stable"
-c.setFillColor('orangered')
-c.drawCentredString(565, 315, t_3)
-t_3 = f"pr={perc.iloc[1]}%"
-c.setFillColor('orangered')
-c.drawCentredString(565, 300, t_3)
-t_4 = "Increase"
-c.setFillColor('darkred')
-c.drawCentredString(565, 270, t_4)
-t_4 = f"pr={perc.iloc[2]}%"
-c.setFillColor('darkred')
-c.drawCentredString(565, 255, t_4)
- 
 
 subtitle_font_size = 10
 c.setFont(subtitle_font, subtitle_font_size)
@@ -325,59 +312,33 @@ c.drawCentredString(525, 382, t_4)
 
 
 first = df_best.iloc[-4][0]
-perc = df_perc.iloc[:,df_best.iloc[-4][1]]
 title_text = f'{first}'
 title_font = "Poppins-Bold"  
 title_font_size = 13
 title_color = HexColor("#df2226")
 c.setFont(title_font, title_font_size)
 c.setFillColor(title_color)
-c.drawString(30, 220, title_text)
+c.drawString(30, 230, title_text)
 
 
 sub_image2 = 'Images/ex4.png'
 sub_image3 = 'Images/ex4_all.png'
 sub_image4 = 'Images/ex4_sce.png'
-c.drawImage(sub_image2, x=30, y=70, width=160,height=120, mask='auto')
-c.drawImage(sub_image3, x=220, y=70, width=200,height=120, mask='auto')
-c.drawImage(sub_image4, x=440, y=60, width=100,height=140, mask='auto')  
-
-subtitle_font_size = 8
-c.setFont(subtitle_font, subtitle_font_size)
-t_1 = "Decrease"
-c.setFillColor((216/255, 134/255, 141/255))
-c.drawCentredString(565, 175, t_1)
-t_1 =f'pr={perc.iloc[0]}%'
-c.setFillColor((216/255, 134/255, 141/255))
-c.drawCentredString(565, 160, t_1)
-t_3 = "Stable"
-c.setFillColor('orangered')
-c.drawCentredString(565, 130, t_3)
-t_3 = f"pr={perc.iloc[1]}%"
-c.setFillColor('orangered')
-c.drawCentredString(565, 115, t_3)
-t_4 = "Increase"
-c.setFillColor('darkred')
-c.drawCentredString(565, 85, t_4)
-t_4 = f"pr={perc.iloc[2]}%"
-c.setFillColor('darkred')
-c.drawCentredString(565, 70, t_4)
-
+c.drawImage(sub_image2, x=10, y=70, width=200,height=120, mask='auto')
+c.drawImage(sub_image3, x=210, y=70, width=240,height=120, mask='auto')
+c.drawImage(sub_image4, x=450, y=70, width=150,height=120, mask='auto')  
 
 subtitle_font_size = 10
 c.setFont(subtitle_font, subtitle_font_size)
 t_1 = "Fatalities over last 10 months"
 c.setFillColor(subtitle_color)
-c.drawCentredString(110, 200, t_1)
+c.drawCentredString(110, 210, t_1)
 t_3 = "Closest historical matches"
 c.setFillColor(subtitle_color)
-c.drawCentredString(320, 200, t_3)
+c.drawCentredString(320, 210, t_3)
 t_4 = "Scenarios"
 c.setFillColor(subtitle_color)
-c.drawCentredString(525, 200, t_4)
-
-
-
+c.drawCentredString(525, 210, t_4)
 
 
 
@@ -396,7 +357,7 @@ c.linkURL(info_url, (297.5 - text_width / 2, 30, 297.5 + text_width / 2, 42), re
 twitter_text = "Twitter"
 twitter_url = "https://twitter.com/LabConflict"
 website_text = "Website"
-website_url = "https://paceconflictlab.wixsite.com/conflict-research-la"
+website_url = "https://pace-risk-map-x35exdywcq-ue.a.run.app/"
 contact = "Contact"
 
 
@@ -443,8 +404,11 @@ conflict-related data across countries. It involves the following steps:
     ones that may be out of sync temporally. A distance threshold is applied to select only 
     sequences that are close matches.
 
-3.  The model then predicts potential increases or decreases in conflict-related fatalities 
-    based on an average of past patterns.
+3.  Predictive scenarios are generated through a structured process that evaluates potential 
+    scenarios using the Past Future of matched sequences.
+    
+More info on 'About' section of the website.
+
 """
 
 
@@ -466,6 +430,7 @@ for line in content.split('\n'):
     c.setFont(subtitle_font, subtitle_font_size)
     c.setFillColor(subtitle_color)
     c.drawString(50, y_position, line)
+c.linkURL(website_url, (letter[0] - right_margin - c.stringWidth(website_text, "Poppins", 10), bottom_margin, letter[0] - right_margin, bottom_margin + line_height), relative=1)
 
 c.save()
 

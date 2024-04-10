@@ -276,7 +276,7 @@ class finder():
                             dist = ed.distance(seq1, seq2)
                         elif metric == 'dtw':
                             # Calculate the Dynamic Time Warping distance between the custom shape and the current window
-                            dist = dtw.distance(seq1, seq2)
+                            dist = dtw.distance(seq1, seq2,use_c=True)
                         tot.append([i, dist, self.Shape.window])
                     except:
                         # Ignore any exceptions (e.g., divide by zero)

@@ -19,7 +19,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install smtplib
           pip install pandas
 
       - name: Run Python script

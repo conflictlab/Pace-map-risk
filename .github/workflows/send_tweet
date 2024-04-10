@@ -23,7 +23,7 @@ jobs:
 
     - name: Run script
       run: |
-        python pdf.py
+        python tweet.py
     - name: Add and commit
       uses: EndBug/add-and-commit@v9
       with:

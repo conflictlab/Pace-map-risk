@@ -5,8 +5,6 @@ Created on Thu Dec  7 17:40:19 2023
 @author: thoma
 """
 
-
-
 import pandas as pd
 import tweepy
 from datetime import datetime

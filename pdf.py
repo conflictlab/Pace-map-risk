@@ -224,8 +224,8 @@ sub_image2 = 'Images/ex1.png'
 sub_image3 = 'Images/ex1_all.png'
 sub_image4 = 'Images/ex1_sce.png'
 c.drawImage(sub_image2, x=10, y=610, width=200,height=120, mask='auto')
-c.drawImage(sub_image4, x=210, y=610, width=150,height=120, mask='auto') 
-c.drawImage(sub_image3, x=370, y=610, width=240,height=120, mask='auto')  
+c.drawImage(sub_image3, x=210, y=610, width=240,height=120, mask='auto') 
+c.drawImage(sub_image4, x=450, y=610, width=150,height=120, mask='auto')  
 
 subtitle_font_size = 10
 c.setFont(subtitle_font, subtitle_font_size)
@@ -234,10 +234,10 @@ c.setFillColor(subtitle_color)
 c.drawCentredString(110, 740, t_1)
 t_3 = "Scenarios"
 c.setFillColor(subtitle_color)
-c.drawCentredString(290, 740, t_3)
+c.drawCentredString(320, 740, t_3)
 t_4 = "Closest historical matches"
 c.setFillColor(subtitle_color)
-c.drawCentredString(485, 740, t_4)
+c.drawCentredString(525, 740, t_4)
 
 
 first = df_best.iloc[-2][0]
@@ -253,8 +253,8 @@ sub_image2 = 'Images/ex2.png'
 sub_image3 = 'Images/ex2_all.png'
 sub_image4 = 'Images/ex2_sce.png'
 c.drawImage(sub_image2, x=10, y=425, width=200,height=120, mask='auto')
-c.drawImage(sub_image4, x=210, y=425, width=150,height=120, mask='auto') 
-c.drawImage(sub_image3, x=370, y=425, width=240,height=120, mask='auto')    
+c.drawImage(sub_image3, x=210, y=425, width=240,height=120, mask='auto') 
+c.drawImage(sub_image4, x=450, y=425, width=150,height=120, mask='auto')    
 
 subtitle_font_size = 10
 c.setFont(subtitle_font, subtitle_font_size)
@@ -263,10 +263,10 @@ c.setFillColor(subtitle_color)
 c.drawCentredString(110, 560, t_1)
 t_3 = "Scenarios"
 c.setFillColor(subtitle_color)
-c.drawCentredString(290, 560, t_3)
+c.drawCentredString(320, 560, t_3)
 t_4 = "Closest historical matches"
 c.setFillColor(subtitle_color)
-c.drawCentredString(485, 560, t_4)
+c.drawCentredString(525, 560, t_4)
 
 
 

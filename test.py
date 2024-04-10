@@ -218,6 +218,7 @@ df_tot_m_plot = df_tot_m_plot.rename(columns={'Bosnia-Herzegovina':'Bosnia and H
                                    'Russia (Soviet Union)':'Russia','Serbia (Yugoslavia)':'Serbia','South Sudan':'S. Sudan',
                                    'Yemen (North Yemen)':'Yemen','Zimbabwe (Rhodesia)':'Zimbabwe','Vietnam (North Vietnam)':'Vietnam'})
 df_tot_m_plot.to_csv('Hist.csv')
+df_tot_m_plot.index = df_tot_m_plot.index.strftime('%b %y')
 
 df_next[0].index = index_s
 df_next[1].index = index_s
@@ -536,7 +537,7 @@ for coun in range(1,5):
      
     fig,ax = plt.subplots(1, 1, figsize=(10, 6))
     ax.plot(df_tot_m_plot.loc[:,sub_name], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
-    ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%b %y'))
+    #ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%b %y'))
     ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=3, maxticks=8))
     ax.grid(axis='y', linestyle='--', alpha=0.7)
     ax.tick_params(axis='x', labelsize=25)
@@ -545,6 +546,19 @@ for coun in range(1,5):
     ax.set_frame_on(False)
     plt.tight_layout()
     plt.savefig(f'Images/ex{coun}.png', bbox_inches='tight')
+    plt.show()
+    
+    fig,ax = plt.subplots(1, 1, figsize=(10, 6))
+    ax.plot(df_tot_m_plot.loc[:,sub_name], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
+    #ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%b %y'))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=3, maxticks=8))
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    ax.tick_params(axis='x', labelsize=25)
+    ax.tick_params(axis='y', labelsize=25)
+    ax.set_title(df_tot_m_plot.loc[:,sub_name].name, fontsize=40, font='Poppins')
+    ax.set_frame_on(False)
+    plt.tight_layout()
+    plt.savefig(f'docs/Images/ex{coun}.png', bbox_inches='tight')
     plt.show()
     
     
@@ -629,6 +643,7 @@ for coun in range(1,5):
     
     plt.tight_layout()
     plt.savefig(f'Images/ex{coun}_sce.png', bbox_inches='tight')
+    plt.savefig(f'docs/Images/ex{coun}_sce.png', bbox_inches='tight')
     plt.show()
 
 # =============================================================================

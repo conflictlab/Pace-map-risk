@@ -174,7 +174,7 @@ for i in range(10):
     ax[8].axis('off')
     
     plt.tight_layout()
-    plt.savefig(f'Images\{i}_c.png', bbox_inches='tight')
+    plt.savefig(f'Images/{i}_c.png', bbox_inches='tight')
     plt.show()
     
 count=pd.Series([0])

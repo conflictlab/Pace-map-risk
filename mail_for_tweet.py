@@ -29,7 +29,7 @@ message["Subject"] = subject
 
 message.attach(MIMEText(body, "plain"))
 count = pd.read_csv('tweet_count.csv',index_col=0)
-filename = f'Images\{count.iloc[0,0]}_c.png'
+filename = f'Images/{count.iloc[0,0]}_c.png'
 
 with open(filename, "rb") as attachment:
     part = MIMEBase("application", "octet-stream")

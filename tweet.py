@@ -23,7 +23,7 @@ auth = tweepy.OAuth1UserHandler(API_key, key_secret)
 auth.set_access_token(access_token, secret_token)
 
 api = tweepy.API(auth)
-media = api.media_upload(f'Images\{count.iloc[0,0]}_c.png')
+media = api.media_upload(f'Images/{count.iloc[0,0]}_c.png')
 media_id = media.media_id
 
 c_1='Test1'

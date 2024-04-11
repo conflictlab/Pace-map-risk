@@ -106,6 +106,7 @@ df_next=[df_dec,df_sta,df_inc]
 colu_l=['grey','#F08080','#df2226']
 nexto = ['Decrease','Stable','Increase']
 
+l_coun=[]
 for i in range(10):
     logo_path = 'Images/PaCE_final.png'  
     logo_img = plt.imread(logo_path)
@@ -177,16 +178,26 @@ for i in range(10):
     plt.savefig(f'Images/{i}_c.png', bbox_inches='tight')
     plt.show()
     
+    if (df_perc.loc[0,sub_name]==df_perc.loc[1,sub_name]):
+        if (df_perc.loc[2,sub_name]==df_perc.loc[1,sub_name]):   
+            l_coun.append([hist_df.loc[:,min_d_list.index[i]].name,'a mixed'])
+        else:
+            l_coun.append([hist_df.loc[:,min_d_list.index[i]].name,'a slightly decreasing'])
+    elif (df_perc.loc[2,sub_name]==df_perc.loc[1,sub_name]):
+        l_coun.append([hist_df.loc[:,min_d_list.index[i]].name,'a slightly increasing'])
+    elif (df_perc.loc[0,sub_name]>df_perc.loc[1:,sub_name].max()):
+        l_coun.append([hist_df.loc[:,min_d_list.index[i]].name,'a decreasing'])
+    elif (df_perc.loc[2,sub_name]>df_perc.loc[:1,sub_name].max()):
+        l_coun.append([hist_df.loc[:,min_d_list.index[i]].name,'an increasing']) 
+    elif (df_perc.loc[1,sub_name]>df_perc.loc[[0,2],sub_name].max()):
+        l_coun.append([hist_df.loc[:,min_d_list.index[i]].name,'a stable']) 
+    else:
+        l_coun.append([hist_df.loc[:,min_d_list.index[i]].name,'a mixed'])
+    
+l_coun=pd.DataFrame(l_coun)
+l_coun.to_csv('tweet_text.csv')
 count=pd.Series([0])
 count.to_csv('tweet_count.csv')   
-    
-'''🔍 Unveiling patterns in conflict data: Our latest analysis reveals Ethiopia\'s fluctuating fatality rates,
-echoing 27 similar historic events. Want to predict what happens next? Explore probabilities and dive deeper 
-with our webapp at https://thomasschinca.github.io/Pace-map-risk/ 
-🌍 #DataScience #ConflictAnalysis #Ethiopia'''
 
-'''🌐 Patterns in conflict reveal much about possible futures. Explore Ethiopia's recent fatality trends 
-and compare with 27 historic parallels. What's next? Our predictive model gives insights. 
-For more, visit our webapp https://www.forecastlab.org/predictionmap
-GitHub : https://github.com/ThomasSchinca/Pace-map-risk. 
-#PredictiveAnalytics #Ethiopia #OpenData'''
+
+

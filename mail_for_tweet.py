@@ -18,8 +18,19 @@ PORT = 587
 EMAIL = 'thomas.schincariol@gmail.com'
 PASSWORD = 'hfzd vsdd zrjo spnt'
 
+count = pd.read_csv('tweet_count.csv',index_col=0)
+tweet_text = pd.read_csv('tweet_text.csv',index_col=0) 
+country=tweet_text.iloc[count.iloc[0,0],0]
+sta=tweet_text.iloc[count.iloc[0,0],1]
+
 subject = "Tweet of the week"
-body = "Hello Thomas, This is the tweet tentative. To send it : https://github.com/ThomasSchinca/Pace-map-risk/actions/workflows/send_tweet.yml"
+body = """Hello Thomas, This is the tweet tentative:
+📊 Check out the last @{country}'s fatalities pattern that mostly led to {sta} conflict risk in history. 
+Explore more:
+🗺️ Webapp https://thomasschinca.github.io/Pace-map-risk/
+📄 Monthly Report https://www.forecastlab.org/predictionmap
+💻 Github repo https://github.com/ThomasSchinca/Pace-map-risk
+To send it : https://github.com/ThomasSchinca/Pace-map-risk/actions/workflows/send_tweet.yml"""
 receiver_email = "schincat@tcd.ie"
 
 message = MIMEMultipart()
@@ -28,7 +39,7 @@ message["To"] = receiver_email
 message["Subject"] = subject
 
 message.attach(MIMEText(body, "plain"))
-count = pd.read_csv('tweet_count.csv',index_col=0)
+
 filename = f'Images/{count.iloc[0,0]}_c.png'
 
 with open(filename, "rb") as attachment:

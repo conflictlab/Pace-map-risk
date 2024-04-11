@@ -24,7 +24,7 @@ country=tweet_text.iloc[count.iloc[0,0],0]
 sta=tweet_text.iloc[count.iloc[0,0],1]
 
 subject = "Tweet of the week"
-body = """Hello Thomas, This is the tweet tentative:
+body = f"""Hello Thomas, This is the tweet tentative:
 📊 Check out the last @{country}'s fatalities pattern that mostly led to {sta} conflict risk in history. 
 Explore more:
 🗺️ Webapp https://thomasschinca.github.io/Pace-map-risk/

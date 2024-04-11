@@ -29,12 +29,11 @@ tweet_text = pd.read_csv('tweet_text.csv',index_col=0)
 
 API_key ='qg3h6s4FJLF86KjaCXUSuwZUU'
 key_secret ='c60Sf12njLHbkNF7yKsNqojLgGuK9jctPQEutVELhirnvouFXF'
-access_token='1521454820644773888-QTqlXt9PrHqK1L28KSvAIJvkZ1xQt9'
-secret_token='aIAPQlACDYl7zmvx4jfP4Zn4yyXg19p6WFjAVv9rp7vB8'
+access_token='1521454820644773888-jgxhG8nQy5ppv4SVeguC2uDA1zQdyh'
+secret_token='VRkhqXx3cgXFc7hSFAnU95y75XmQQyYfIjq1DUqhKsNuj'
 client_id = 'dTRhSy1RUFloTldpeWFfX2FvX0g6MTpjaQ'
 client_sec='l54gjxDqQTfu0ZC1ZwA1ISJT6GUGtvVhs5L8tBvfs5x9b9LfuZ'
 bearer_tok='AAAAAAAAAAAAAAAAAAAAAIIEtQEAAAAAzjqCdOepSJAJ6QxabIdtGx%2BCtQw%3Dif4zijUWkbIpd6etlwwUa2h6QwtCnnV8Pt80tZozt37enxTtCG'
-
 
 auth = tweepy.OAuth1UserHandler(API_key, key_secret)
 auth.set_access_token(access_token, secret_token)

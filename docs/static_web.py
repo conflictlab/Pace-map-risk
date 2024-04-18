@@ -71,32 +71,16 @@ nations with comparable conflict trajectories.'''),
                html.H3('Higher risk - Individual Cases',style={'marginBottom': '5vh','marginTop': '15vh','textAlign': 'center'})
                ]),  
         dbc.Row([
-                dbc.Col([
-                    html.Div(html.Img(src='Images/ex1.png',className='sub1'))
-                    ]),
-                dbc.Col([
-                    html.Div(html.Img(src='Images/ex1_sce.png',className='sub2'))
-                    ])
-                ],style={'marginBottom': '10vh'}),
+                html.Div(html.Img(src='Images/ex1_tot.gif', style={'width': '80%'}), style={'text-align': 'center'})
+                ]),
         dbc.Row([
-                dbc.Col([
-                    html.Div(html.Img(src='Images/ex2.png', className='sub1'))
-                    ]),
-                dbc.Col([
-                    html.Div(html.Img(src='Images/ex2_sce.png', className='sub2'))
-                    ])
-                ],style={'marginBottom': '10vh'}),
-        
+                html.Div(html.Img(src='Images/ex2_tot.gif', style={'width': '80%'}), style={'text-align': 'center'})
+                ]),
         dbc.Row([
-                dbc.Col([
-                    html.Div(html.Img(src='Images/ex3.png', className='sub1'))
-                    ]),
-                dbc.Col([
-                    html.Div(html.Img(src='Images/ex3_sce.png', className='sub2'))
-                    ])
-                ],style={'marginBottom': '5vh'}),
-        ]),  
-    ]),
+                html.Div(html.Img(src='Images/ex3_tot.gif', style={'width': '80%'}), style={'text-align': 'center'}),
+                ]),  
+        ]),
+    ]),                
     html.Div([
         html.H1("About", style={'marginBottom':'5vh','marginTop':'10vh','textAlign': 'center'}),
         html.H3("Overview"),

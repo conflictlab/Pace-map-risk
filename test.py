@@ -21,6 +21,8 @@ from datetime import datetime,timedelta
 import math
 from matplotlib.font_manager import FontProperties
 from matplotlib import font_manager
+from PIL import Image
+
 
 df = pd.read_csv("https://ucdp.uu.se/downloads/ged/ged231-csv.zip",
                   parse_dates=['date_start','date_end'],low_memory=False)
@@ -185,8 +187,6 @@ pred_df = pred_df.rename(columns={'Bosnia-Herzegovina':'Bosnia and Herz.','Cambo
                                     'Russia (Soviet Union)':'Russia','Serbia (Yugoslavia)':'Serbia','South Sudan':'S. Sudan',
                                     'Yemen (North Yemen)':'Yemen','Zimbabwe (Rhodesia)':'Zimbabwe','Vietnam (North Vietnam)':'Vietnam'})
 
-value_pred = pred_df.sum().reset_index()
-value_pred.columns=['name','value']
 
 histo = df_tot_m.iloc[-h:,:]
 histo = histo.rename(columns={'Bosnia-Herzegovina':'Bosnia and Herz.','Cambodia (Kampuchea)':'Cambodia',
@@ -197,17 +197,6 @@ histo = histo.rename(columns={'Bosnia-Herzegovina':'Bosnia and Herz.','Cambodia 
                                    'Yemen (North Yemen)':'Yemen','Zimbabwe (Rhodesia)':'Zimbabwe','Vietnam (North Vietnam)':'Vietnam'})
 histo = histo.sum().reset_index()
 histo.columns=['name','hist']
-
-
-world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
-world = world.merge(value_pred, how='left',on='name')
-world = world.merge(histo, how='left',on='name')
-world = world[world.name != 'Antarctica']
-world = world.fillna(0)
-world.loc[world['value'] < 0, 'value'] = 0
-world['per_pred']=world['value']/world['pop_est']
-world['log_per_pred']=np.log10(world['value']+1)
-world.to_file('world_plot.geojson', driver='GeoJSON') 
 
 
 df_tot_m_plot=df_tot_m.iloc[-h_train:,:]
@@ -258,6 +247,35 @@ with open('sce_dictionary.pkl', 'wb') as f:
     pickle.dump(dict_sce_plot_f, f)
 
 
+pred_df_sce = []
+for i,col in enumerate(pred_df):
+    df_scen = dict_sce_plot_f[col][1]
+    if len(df_scen)>0:
+        indi = pd.Series(df_scen.index)
+        max_indices = indi[indi == indi.max()].index.tolist()
+        bef = df_tot_m_plot.loc[:,col]
+        pred_df_sce.append((df_scen.iloc[max_indices,:].mean()*(bef.max()-bef.min())+ bef.min()).tolist())
+        ind_sce = df_scen.columns
+    else:
+        pred_df_sce.append([0]*h)
+pred_df_sce = pd.DataFrame(pred_df_sce).T
+pred_df_sce.index=ind_sce
+pred_df_sce.columns=pred_df.columns
+
+value_pred = pred_df_sce.sum().reset_index()
+value_pred.columns=['name','value']
+
+world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
+world = world.merge(value_pred, how='left',on='name')
+world = world.merge(histo, how='left',on='name')
+world = world[world.name != 'Antarctica']
+world = world.fillna(0)
+world.loc[world['value'] < 0, 'value'] = 0
+world['per_pred']=world['value']/world['pop_est']
+world['log_per_pred']=np.log10(world['value']+1)
+world.to_file('world_plot.geojson', driver='GeoJSON') 
+
+
 font_path = 'Poppins/Poppins-Regular.ttf'
 prop = FontProperties(fname=font_path)
 font_manager.fontManager.addfont(font_path)
@@ -295,8 +313,8 @@ plt.show()
 # =============================================================================
 # Historical Plot
 # =============================================================================
-pred_df.index = pd.date_range(start=df_tot_m.index[-1],periods=h+1,freq='M')[1:]
-historical_series = pd.concat([df_tot_m.sum(axis=1).iloc[-60:],pred_df.sum(axis=1)],axis=0)
+pred_df_sce.index = pd.date_range(start=df_tot_m.index[-1],periods=h+1,freq='M')[1:]
+historical_series = pd.concat([df_tot_m.sum(axis=1).iloc[-60:],pred_df_sce.sum(axis=1)],axis=0)
 date_rng = historical_series.index
 
 plt.figure(figsize=(25, 6))
@@ -317,48 +335,48 @@ plt.show()
 # Per continent
 # =============================================================================
 
-pred_cont = world.groupby('continent').sum()['value']
-hist_cont = world.groupby('continent').sum()['hist'] 
+# pred_cont = world.groupby('continent').sum()['value']
+# hist_cont = world.groupby('continent').sum()['hist'] 
 
-df_plot = pd.DataFrame({'pred_cont': pred_cont, 'hist_cont': hist_cont})
-df_plot = df_plot[df_plot.index!='Seven seas (open ocean)']
-df_plot = df_plot.sort_values('pred_cont')
-df_plot['color'] = np.where(df_plot['pred_cont'] > df_plot['hist_cont'], 'red', 'black')
-def calculate_alpha(row):
-    diff_ratio = (row['pred_cont'] - row['hist_cont']) / (row['hist_cont']+1)
-    return np.clip(diff_ratio / 2 +0.5 , 0, 1)
-df_plot['alpha'] = df_plot.apply(calculate_alpha, axis=1)
-plt.figure(figsize=(10, 6))
-ax=sns.barplot(x=df_plot.index, y='pred_cont', data=df_plot, palette=df_plot['color'])
-for i, bar in enumerate(ax.patches):
-    bar.set_alpha(df_plot['alpha'].iloc[i])
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
-ax.spines['left'].set_visible(False)
-ax.set_yticklabels([])
-ax.set_yticks([])
-ax.spines['bottom'].set_color('#DDDDDD')
-ax.tick_params(bottom=False, left=False)
-ax.set_axisbelow(True)
-ax.yaxis.grid(True, color='#EEEEEE')
-ax.xaxis.grid(False)
-#plt.xlabel('Continent', fontsize=20)
-plt.xlabel('')
-#plt.ylabel('Sum of Values', fontsize=12)
-#plt.title('Predicted values by Continent', fontsize=16)
-plt.yscale('log')
-plt.ylabel('')
-plt.xticks(fontsize=16)  # Set x-axis tick font size
-plt.yticks(fontsize=16)
+# df_plot = pd.DataFrame({'pred_cont': pred_cont, 'hist_cont': hist_cont})
+# df_plot = df_plot[df_plot.index!='Seven seas (open ocean)']
+# df_plot = df_plot.sort_values('pred_cont')
+# df_plot['color'] = np.where(df_plot['pred_cont'] > df_plot['hist_cont'], 'red', 'black')
+# def calculate_alpha(row):
+#     diff_ratio = (row['pred_cont'] - row['hist_cont']) / (row['hist_cont']+1)
+#     return np.clip(diff_ratio / 2 +0.5 , 0, 1)
+# df_plot['alpha'] = df_plot.apply(calculate_alpha, axis=1)
+# plt.figure(figsize=(10, 6))
+# ax=sns.barplot(x=df_plot.index, y='pred_cont', data=df_plot, palette=df_plot['color'])
+# for i, bar in enumerate(ax.patches):
+#     bar.set_alpha(df_plot['alpha'].iloc[i])
+# ax.spines['top'].set_visible(False)
+# ax.spines['right'].set_visible(False)
 # ax.spines['left'].set_visible(False)
 # ax.set_yticklabels([])
 # ax.set_yticks([])
-plt.xticks(rotation=45, ha='right')
-ax.spines['left'].set_visible(False)
-ax.set_yticklabels([])
-ax.set_yticks([])
-plt.savefig('Images/sub3.png', bbox_inches='tight')
-plt.show()
+# ax.spines['bottom'].set_color('#DDDDDD')
+# ax.tick_params(bottom=False, left=False)
+# ax.set_axisbelow(True)
+# ax.yaxis.grid(True, color='#EEEEEE')
+# ax.xaxis.grid(False)
+# #plt.xlabel('Continent', fontsize=20)
+# plt.xlabel('')
+# #plt.ylabel('Sum of Values', fontsize=12)
+# #plt.title('Predicted values by Continent', fontsize=16)
+# plt.yscale('log')
+# plt.ylabel('')
+# plt.xticks(fontsize=16)  # Set x-axis tick font size
+# plt.yticks(fontsize=16)
+# # ax.spines['left'].set_visible(False)
+# # ax.set_yticklabels([])
+# # ax.set_yticks([])
+# plt.xticks(rotation=45, ha='right')
+# ax.spines['left'].set_visible(False)
+# ax.set_yticklabels([])
+# ax.set_yticks([])
+# plt.savefig('Images/sub3.png', bbox_inches='tight')
+# plt.show()
 
 # =============================================================================
 # Risk Countries
@@ -474,6 +492,19 @@ plt.show()
 # =============================================================================
 #df_tot_m_plot=pd.read_csv('Hist.csv',parse_dates=True,index_col=(0))
 
+def paste_images_side_by_side(image1_path, image2_path, output_path):
+    image1 = Image.open(image1_path)
+    image2 = Image.open(image2_path)
+    height = max(image1.height, image2.height)
+    image1 = image1.resize((int(image1.width * height / image1.height), height))
+    image2 = image2.resize((int(image2.width * height / image2.height), height))
+    new_width = image1.width + image2.width
+    new_image = Image.new("RGB", (new_width, height))
+    new_image.paste(image1, (0, 0))
+    new_image.paste(image2, (image1.width, 0))
+    new_image.save(output_path)
+
+df_tot_m=rena_f(df_tot_m)
 indo=[]
 for coun in range(1,5):
     indo.append(df_tot_m.columns.tolist().index(df_plot.index[-coun]))
@@ -645,6 +676,10 @@ for coun in range(1,5):
     plt.savefig(f'Images/ex{coun}_sce.png', bbox_inches='tight')
     plt.savefig(f'docs/Images/ex{coun}_sce.png', bbox_inches='tight')
     plt.show()
+
+    paste_images_side_by_side(f'docs/Images/ex{coun}.png', f'docs/Images/ex{coun}_sce.png', f'docs/Images/ex{coun}_tot.png')
+
+
 
 # =============================================================================
 # Specific

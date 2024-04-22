@@ -605,14 +605,18 @@ for coun in range(1,5):
     fig,ax = plt.subplots(2, 2, figsize=(12, 6))
     ax = ax.flatten()
     for c in range(4):
-        ax[c].plot(dict_m[sub_name][c][0], marker='o', color='#808080', linestyle='-', linewidth=2, markersize=8)
-        ax[c].xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%b %y'))
-        ax[c].xaxis.set_major_locator(mdates.AutoDateLocator(minticks=4, maxticks=4))
-        ax[c].grid(axis='y', linestyle='--', alpha=0.7)
-        ax[c].tick_params(axis='x', labelsize=15,color='#808080')
-        ax[c].tick_params(axis='y', labelsize=15,color='#808080')
-        ax[c].set_title(dict_m[sub_name][c][0].name, fontsize=20, font='Poppins',color='#808080')
-        ax[c].set_frame_on(False)
+        try:
+            ax[c].plot(dict_m[sub_name][c][0], marker='o', color='#808080', linestyle='-', linewidth=2, markersize=8)
+            ax[c].xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%b %y'))
+            ax[c].xaxis.set_major_locator(mdates.AutoDateLocator(minticks=4, maxticks=4))
+            ax[c].grid(axis='y', linestyle='--', alpha=0.7)
+            ax[c].tick_params(axis='x', labelsize=15,color='#808080')
+            ax[c].tick_params(axis='y', labelsize=15,color='#808080')
+            ax[c].set_title(dict_m[sub_name][c][0].name, fontsize=20, font='Poppins',color='#808080')
+            ax[c].set_frame_on(False)
+        except:
+            ax[c].set_frame_on(False)
+            ax[c].axis('off')
     plt.tight_layout()
     plt.savefig(f'Images/ex{coun}_all.png', bbox_inches='tight')
     plt.show()
@@ -642,13 +646,13 @@ for coun in range(1,5):
                                       [2,2,2,2,2,5]], figsize=(10, 8))    
     for c in range(3):
         try:
-            if int(dict_sce[sub_name][1].iloc[pd.Series(dict_sce[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100)>=50:
+            if int(dict_sce_plot[sub_name][1].iloc[pd.Series(dict_sce_plot[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100)>=50:
                 colu="#df2226"
             else:
-                sup1=hex(34+(50-int(dict_sce[sub_name][1].iloc[pd.Series(dict_sce[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100))*3)[2:]
-                sup2=hex(38+(50-int(dict_sce[sub_name][1].iloc[pd.Series(dict_sce[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100))*3)[2:]
+                sup1=hex(34+(50-int(dict_sce_plot[sub_name][1].iloc[pd.Series(dict_sce_plot[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100))*3)[2:]
+                sup2=hex(38+(50-int(dict_sce_plot[sub_name][1].iloc[pd.Series(dict_sce_plot[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100))*3)[2:]
                 colu='#df'+str(sup1)+str(sup2)
-            scen = dict_sce[sub_name][1].iloc[pd.Series(dict_sce[sub_name][1].index).sort_values(ascending=False).index[c],:].tolist()
+            scen = dict_sce_plot[sub_name][1].iloc[pd.Series(dict_sce_plot[sub_name][1].index).sort_values(ascending=False).index[c],:].tolist()
             b = (df_tot_m_plot.loc[:,sub_name] - df_tot_m_plot.loc[:,sub_name].min())/(df_tot_m_plot.loc[:,sub_name].max()-df_tot_m_plot.loc[:,sub_name].min())
             scen = pd.Series(b.tolist()+scen)
             scen = scen*(df_tot_m_plot.loc[:,sub_name].max()-df_tot_m_plot.loc[:,sub_name].min()) + df_tot_m_plot.loc[:,sub_name].min()
@@ -664,7 +668,7 @@ for coun in range(1,5):
             ax[c].spines['right'].set_visible(False)  
             ax[c].spines['bottom'].set_visible(False)
             ax[c].spines['left'].set_visible(False)
-            ax[c+3].text(0.1,0.4,f'Freq = {int(dict_sce[sub_name][1].iloc[pd.Series(dict_sce[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100)}%',fontsize=30,color=colu)
+            ax[c+3].text(0.1,0.4,f'Freq = {int(dict_sce_plot[sub_name][1].iloc[pd.Series(dict_sce_plot[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100)}%',fontsize=30,color=colu)
             ax[c+3].set_frame_on(False)
             ax[c+3].set_xticks([])
             ax[c+3].set_yticks([])

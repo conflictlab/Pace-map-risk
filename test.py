@@ -622,11 +622,11 @@ for coun in range(1,5):
     plt.show()
     
     
-    if len(dict_sce[sub_name][1])>2:
+    if len(dict_sce_plot[sub_name][1])>2:
         fig, ax = plt.subplot_mosaic([[0,0,0,0,0,3],
                                       [1,1,1,1,1,4],
                                       [2,2,2,2,2,5]], figsize=(10, 8))
-    elif len(dict_sce[sub_name][1])==2:
+    elif len(dict_sce_plot[sub_name][1])==2:
         fig, ax = plt.subplot_mosaic([[2,2,2,2,2,9],
                                       [0,0,0,0,0,3],
                                       [0,0,0,0,0,3],

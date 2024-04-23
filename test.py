@@ -323,7 +323,7 @@ plt.plot(date_rng[-h:], historical_series[-h:], marker='o', color='red', linesty
 plt.scatter(date_rng[-h:], historical_series[-h:], color='red', s=100, zorder=5)
 plt.grid(axis='y', linestyle='--', alpha=0.7)
 plt.xlabel('Date', fontsize=20)
-plt.xticks(fontsize=16)  # Set x-axis tick font size
+plt.xticks(fontsize=16)
 plt.yticks(fontsize=16)
 plt.box(False)
 plt.xticks(rotation=45, ha='right')
@@ -389,31 +389,33 @@ def calculate_alpha(row):
     diff_ratio = abs(row['value'] - row['hist']) / (row['hist']+1)
     return np.clip(diff_ratio / 2 +0.5 , 0, 1)
 df_plot['alpha'] = df_plot.apply(calculate_alpha, axis=1)
-plt.figure(figsize=(10, 6))
+
+fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 ax = sns.barplot(x=df_plot.index, y='value', data=df_plot, palette=df_plot['color'])
 for i, bar in enumerate(ax.patches):
     bar.set_alpha(df_plot['alpha'].iloc[i])
 ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+# ax.set_yticklabels(ax.get_yticklabels(), rotation=45, ha='right',color='white')
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-ax.spines['left'].set_visible(False)
 ax.spines['bottom'].set_color('#DDDDDD')
-ax.tick_params(bottom=False, left=False)
-ax.set_axisbelow(True)
-ax.yaxis.grid(True, color='#EEEEEE')
-ax.xaxis.grid(False)
-#plt.xlabel('Country', fontsize=20)
+ax.tick_params(bottom=False)
+# ax.yaxis.grid(True, color='#EEEEEE',alpha=1)
+# ax.xaxis.grid(False)
 plt.xlabel('')
 plt.ylabel('')
-#plt.title('Most risky countries (log scale)', fontsize=16)
 plt.yscale('log')
-plt.xticks(fontsize=16)  # Set x-axis tick font size
+plt.xticks(fontsize=16)
 plt.yticks(fontsize=16)
 ax.spines['left'].set_visible(False)
 ax.set_yticklabels([])
 ax.set_yticks([])
+ax.get_yaxis().get_major_formatter().labelOnlyBase = False
+ax.get_yaxis().set_tick_params(which='minor', size=0,labelcolor='white')
+ax.get_yaxis().set_tick_params(which='minor', width=0,labelcolor='white') 
 plt.savefig('Images/sub2.png', bbox_inches='tight')
 plt.show()
+
 
 # =============================================================================
 # Increase risk
@@ -434,7 +436,7 @@ df_plot_d = df_plot.iloc[:10]
 df_plot_d['diff'] = -df_plot_d['diff']
 df_plot_d = df_plot_d.sort_values('diff',ascending=True)
 
-plt.figure(figsize=(10, 6))
+fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 ax = sns.barplot(x=df_plot_d.index, y='diff', data=df_plot_d, palette=df_plot_d['color'])
 for i, bar in enumerate(ax.patches):
     bar.set_alpha(df_plot_d['alpha'].iloc[i])
@@ -451,16 +453,18 @@ plt.xlabel('')
 plt.ylabel('')
 plt.yscale('log')
 plt.xticks(fontsize=16)  # Set x-axis tick font size
-plt.yticks(fontsize=16)
 ax.spines['left'].set_visible(False)
 ax.set_yticklabels([])
 ax.set_yticks([])
+ax.get_yaxis().get_major_formatter().labelOnlyBase = False
+ax.get_yaxis().set_tick_params(which='minor', size=0,labelcolor='white')
+ax.get_yaxis().set_tick_params(which='minor', width=0,labelcolor='white') 
 plt.savefig('Images/sub2_d.png', bbox_inches='tight')
 plt.show()
 
 df_plot_d = df_plot.iloc[-10:]
 
-plt.figure(figsize=(10, 6))
+fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 ax = sns.barplot(x=df_plot_d.index, y='diff', data=df_plot_d, palette=df_plot_d['color'])
 for i, bar in enumerate(ax.patches):
     bar.set_alpha(df_plot_d['alpha'].iloc[i])
@@ -473,18 +477,19 @@ ax.tick_params(bottom=False, left=False)
 ax.set_axisbelow(True)
 ax.yaxis.grid(True, color='#EEEEEE')
 ax.xaxis.grid(False)
-#plt.xlabel('Country', fontsize=20)
 plt.xlabel('')
 plt.ylabel('')
-#plt.title('Most risky countries (log scale)', fontsize=16)
 plt.yscale('log')
-plt.xticks(fontsize=16)  # Set x-axis tick font size
-plt.yticks(fontsize=16)
+plt.xticks(fontsize=16)
 ax.spines['left'].set_visible(False)
 ax.set_yticklabels([])
 ax.set_yticks([])
+ax.get_yaxis().get_major_formatter().labelOnlyBase = False
+ax.get_yaxis().set_tick_params(which='minor', size=0,labelcolor='white')
+ax.get_yaxis().set_tick_params(which='minor', width=0,labelcolor='white') 
 plt.savefig('Images/sub2_i.png', bbox_inches='tight')
 plt.show()
+
 
 
 # =============================================================================

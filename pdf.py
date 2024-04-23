@@ -232,10 +232,10 @@ c.setFont(subtitle_font, subtitle_font_size)
 t_1 = "Fatalities over last 10 months"
 c.setFillColor(subtitle_color)
 c.drawCentredString(110, 740, t_1)
-t_3 = "Scenarios"
+t_3 = "Closest historical matches"
 c.setFillColor(subtitle_color)
 c.drawCentredString(320, 740, t_3)
-t_4 = "Closest historical matches"
+t_4 = "Scenarios"
 c.setFillColor(subtitle_color)
 c.drawCentredString(525, 740, t_4)
 
@@ -261,10 +261,10 @@ c.setFont(subtitle_font, subtitle_font_size)
 t_1 = "Fatalities over last 10 months"
 c.setFillColor(subtitle_color)
 c.drawCentredString(110, 560, t_1)
-t_3 = "Scenarios"
+t_3 = "Closest historical matches"
 c.setFillColor(subtitle_color)
 c.drawCentredString(320, 560, t_3)
-t_4 = "Closest historical matches"
+t_4 = "Scenarios"
 c.setFillColor(subtitle_color)
 c.drawCentredString(525, 560, t_4)
 

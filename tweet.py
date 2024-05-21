@@ -46,7 +46,7 @@ country=tweet_text.iloc[count.iloc[0,0],0]
 sta=tweet_text.iloc[count.iloc[0,0],1]
 
 if count.iloc[0,0]==0:
-    message = f'''📊 Our new monthly report is in ! The last @{country}'s fatalities pattern that mostly led to {sta} conflict risk in history.
+    message = f'''📊 Our new monthly report is in ! Check out the last @{country}'s fatalities pattern that mostly led to {sta} conflict risk in history.
     🗺️ Webapp https://thomasschinca.github.io/Pace-map-risk/
     📄 Monthly Report https://www.forecastlab.org/predictionmap
     💻 Github repo https://github.com/ThomasSchinca/Pace-map-risk'''    

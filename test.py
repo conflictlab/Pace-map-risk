@@ -509,6 +509,7 @@ def paste_images_side_by_side(image1_path, image2_path, output_path):
     new_image.paste(image2, (image1.width, 0))
     new_image.save(output_path)
 
+df_plot =pred_risk.set_index('name').sort_values('value',ascending=True)
 df_tot_m=rena_f(df_tot_m)
 indo=[]
 for coun in range(1,5):

@@ -219,7 +219,7 @@ class finder():
         self.sce = sce
         self.val_sce = val_sce
         
-    def find_patterns(self, metric='euclidean', min_d=0.5, dtw_sel=0, select=True):
+    def find_patterns(self, metric='euclidean', min_d=0.5, dtw_sel=0, select=True, min_mat=0, d_increase=None):
         """
         Finds custom patterns in the given dataset using the interactive shape finder.
     
@@ -305,29 +305,51 @@ class finder():
         # Create a DataFrame from the list of sequences and distances, sort it by distance, and filter based on min_d
         tot = pd.DataFrame(tot)
         tot = tot.sort_values([1])
-        tot = tot[tot[1] < min_d]
-        toti = tot[0]
+        tot_cut = tot[tot[1] < min_d]
+        toti = tot_cut[0]
     
         if select:
             n = len(toti)
             diff_data = {f'diff{i}': toti.diff(i) for i in range(1, n + 1)}
             diff_df = pd.DataFrame(diff_data).fillna(self.Shape.window)
             diff_df = abs(diff_df)
-            tot = tot[diff_df.min(axis=1) >= (self.Shape.window / 2)]
+            tot_cut = tot_cut[diff_df.min(axis=1) >= (self.Shape.window / 2)]
     
-        if len(tot) > 0:
+        if len(tot_cut) > min_mat:
             # If there are selected patterns, store them along with their distances in the 'sequences' list
-            for c_lo in range(len(tot)):
-                i = tot.iloc[c_lo, 0]
-                win_l = int(tot.iloc[c_lo, 2])
+            for c_lo in range(len(tot_cut)):
+                i = tot_cut.iloc[c_lo, 0]
+                win_l = int(tot_cut.iloc[c_lo, 2])
                 exclude, interv, n_test = int_exc(seq_n, win_l)
                 col = seq[bisect.bisect_right(interv, i) - 1].name
                 index_obs = seq[bisect.bisect_right(interv, i) - 1].index[i - interv[bisect.bisect_right(interv, i) - 1]]
                 obs = self.data.loc[index_obs:, col].iloc[:win_l]
-                self.sequences.append([obs, tot.iloc[c_lo, 1]])
+                self.sequences.append([obs, tot_cut.iloc[c_lo, 1]])
         else:
-            print('No patterns found')
-
+            if d_increase==None:
+                print('Not enough patterns found')
+            else:
+                flag_end=False
+                while flag_end==False:
+                    min_d = min_d + d_increase
+                    tot_cut = tot[tot[1] < min_d]
+                    toti = tot_cut[0]
+                    if select:
+                        n = len(toti)
+                        diff_data = {f'diff{i}': toti.diff(i) for i in range(1, n + 1)}
+                        diff_df = pd.DataFrame(diff_data).fillna(self.Shape.window)
+                        diff_df = abs(diff_df)
+                        tot_cut = tot_cut[diff_df.min(axis=1) >= (self.Shape.window / 2)]
+                    if len(tot_cut) > min_mat:
+                        for c_lo in range(len(tot_cut)):
+                            i = tot_cut.iloc[c_lo, 0]
+                            win_l = int(tot_cut.iloc[c_lo, 2])
+                            exclude, interv, n_test = int_exc(seq_n, win_l)
+                            col = seq[bisect.bisect_right(interv, i) - 1].name
+                            index_obs = seq[bisect.bisect_right(interv, i) - 1].index[i - interv[bisect.bisect_right(interv, i) - 1]]
+                            obs = self.data.loc[index_obs:, col].iloc[:win_l]
+                            self.sequences.append([obs, tot_cut.iloc[c_lo, 1]])
+                        flag_end=True
         
     def plot_sequences(self,how='units'):
         """
@@ -597,6 +619,25 @@ class finder():
         df_sce["Decade"] = pd.cut(df_sce["Decade"], bins=[1989, 2000, 2010, 2020, 2099], labels=['90-2000', '2000-2010', '2010-2020','2020-Now'], right=False)
         df_sce["Scale"] = pd.cut(df_sce["Scale"], bins=[0, 10, 100, 1000,np.inf], labels=['<10', '10-100', '100-1000','>1000'], right=False)
         self.sce = df_sce
+        self.val_sce = val_sce
+        
+    def create_sce_predict(self,horizon=6):
+        if len(self.sequences) == 0:
+            raise 'No shape found, please fit before predict.'
+        tot_seq = [[series.name, series.index[-1],series.min(),series.max(),series.sum()] for series, weight in self.sequences]
+        pred_seq=[]
+        for col,last_date,mi,ma,somme in tot_seq:
+            date=self.data.index.get_loc(last_date)
+            if date+horizon<len(self.data):
+                seq=self.data.iloc[date+1:date+1+horizon,self.data.columns.get_loc(col)].reset_index(drop=True)
+                seq = (seq - mi) / (ma - mi)
+                pred_seq.append(seq.tolist())
+        tot_seq=pd.DataFrame(pred_seq)
+        linkage_matrix = linkage(tot_seq, method='ward')
+        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        tot_seq['Cluster'] = clusters
+        val_sce = tot_seq.groupby('Cluster').mean()
+        val_sce.index = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),3)
         self.val_sce = val_sce
         
 

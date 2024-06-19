@@ -24,9 +24,8 @@ from matplotlib import font_manager
 from PIL import Image
 
 
-df = pd.read_csv("https://ucdp.uu.se/downloads/ged/ged231-csv.zip",
+df = pd.read_csv("https://ucdp.uu.se/downloads/ged/ged241-csv.zip",
                   parse_dates=['date_start','date_end'],low_memory=False)
-df= pd.concat([df,pd.read_csv('https://ucdp.uu.se/downloads/candidateged/GEDEvent_v23_01_23_12.csv',parse_dates=['date_start','date_end'],low_memory=False)],axis=0)
 month = datetime.now().strftime("%m")
 for i in range(1,int(month)):
     if i==1:

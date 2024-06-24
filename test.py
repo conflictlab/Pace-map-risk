@@ -76,11 +76,11 @@ for coun in range(len(df_tot_m.columns)):
         shape = Shape()
         shape.set_shape(df_tot_m.iloc[-h_train:,coun]) 
         find = finder(df_tot_m.iloc[:-h,:],shape)
-        find.find_patterns(min_d=0.1,select=True,metric='dtw',dtw_sel=2)
-        min_d_d=0.1
-        while len(find.sequences)<3:
-            min_d_d += 0.05
-            find.find_patterns(min_d=min_d_d,select=True,metric='dtw',dtw_sel=2)
+        find.find_patterns(min_d=0.1,select=True,metric='dtw',dtw_sel=2,min_mat=3,d_increase=0.05)
+        # min_d_d=0.1
+        # while len(find.sequences)<3:
+        #     min_d_d += 0.05
+        #     find.find_patterns(min_d=min_d_d,select=True,metric='dtw',dtw_sel=2)
         pred_ori = find.predict(horizon=h,plot=False,mode='mean')
         find.create_sce(df_conf,h)
         pred_raw.append(pred_ori)

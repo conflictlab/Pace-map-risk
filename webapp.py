@@ -292,7 +292,7 @@ download_layout= html.Div([
     dbc.Container([
             dbc.Row([
                 dbc.Col(html.Div([
-                    html.H2("Report", style={'textAlign': 'left'}),
+                    html.H2("Download", style={'textAlign': 'left'}),
                     dbc.Nav([
                         dbc.NavLink("Risk Map", href="/home", style={'color': '#555'}),
                         dbc.NavLink("About", href="/about", style={'color': '#555'}),
@@ -312,7 +312,9 @@ download_layout= html.Div([
         html.H1("Download Our Predictions", style={'marginBottom':20,'textAlign': 'center'}),
         html.H3("Dataset Available"),
         dcc.Markdown("""
-        The Pace Risk Map web application is designed to visualize and analyze risk factors related to conflict and fatalities across different countries. It incorporates geographical data, matching models, and historical information to provide insights into potential conflict scenarios.
+        All the available prediction dataset are listed bellow. 
+        The format is the following : Year(input)-Month(input)_Month-Year(first forecasted month)_Month-Year(last forecasted month)
+        For example, 2024-01_Feb-2024_to_Jul-2024.csv contains the forecasted value from February 2024 to July 2024 using data until January 2024.
         """), 
         dcc.RadioItems(csv_files, csv_files[0], id="download-id"),
         html.Div([

@@ -46,14 +46,15 @@ l_pred = [series.reset_index(drop=True) for series in l_pred]
 df_pred = pd.concat(l_pred, axis=1)
 df_pred.columns = na
 df_pred.index = sub_p.index
+df_pred[df_pred<0]=0
 
-month = datetime.now().strftime("%b")
-year = datetime.now().strftime("%Y")
-until = date.today() + relativedelta(months=-1)
+month = df_pred.index[0].strftime("%b")
+year = df_pred.index[0].strftime("%Y")
+until = df_pred.index[0] + relativedelta(months=-1)
 month_t = until.strftime("%Y")
 s_month_t = until.strftime("%b")
 month_t_l = until.strftime("%B")
-six_months = date.today() + relativedelta(months=+5)
+six_months = df_pred.index[-1]
 sm_m = six_months.strftime("%b")
 sm_y = six_months.strftime("%Y")
 

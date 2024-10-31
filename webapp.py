@@ -19,6 +19,7 @@ import pandas as pd
 import pickle 
 import base64
 import numpy as np
+import os
 
 def generate_subplot(series):
     fig = px.line(series, title=series.name)
@@ -121,6 +122,7 @@ missing_columns.discard('Dominican Rep.')
 dict_sce.update({col: [[],[]] for col in missing_columns})
 
 
+
 pace_png = base64.b64encode(open('PaCE_final_icon.png', 'rb').read()).decode('ascii')
 git_png = base64.b64encode(open('github-mark.png', 'rb').read()).decode('ascii')
 x_logo = base64.b64encode(open('x_logo.png', 'rb').read()).decode('ascii')
@@ -132,6 +134,7 @@ ab2 = base64.b64encode(open('Images/about_2.png', 'rb').read()).decode('ascii')
 ab3 = base64.b64encode(open('Images/about_3.png', 'rb').read()).decode('ascii')
 ab4 = base64.b64encode(open('Images/about_4b.png', 'rb').read()).decode('ascii')
 
+csv_files = [f for f in os.listdir('Historical_Predictions/') if f.endswith('.csv')][::-1]
 
 webapp = dash.Dash(__name__,external_stylesheets=[dbc.themes.BOOTSTRAP,dbc.themes.LUX],
                     meta_tags=[{'name': 'viewport',
@@ -155,6 +158,7 @@ home_layout = html.Div([
                             #dbc.NavLink("Try The Model", href="https://shapefinder.azurewebsites.net/", style={'color': '#555'}),
                             dbc.NavLink("Monthly Report", href="/report", style={'color': '#555'}),
                             dbc.NavLink("About", href="/about", style={'color': '#555'}),
+                            dbc.NavLink("Download", href="/download", style={'color': '#555'}),
                             dbc.NavLink("The Team", href="https://paceconflictlab.wixsite.com/conflict-research-la/team-4", style={'color': '#555'}),
                             dbc.NavLink("Contact", href="mailto:schincat@tcd.ie", style={'color': '#555'})
                         ]),
@@ -203,6 +207,7 @@ report_layout= html.Div([
                     dbc.Nav([
                         dbc.NavLink("Risk Map", href="/home", style={'color': '#555'}),
                         dbc.NavLink("About", href="/about", style={'color': '#555'}),
+                        dbc.NavLink("Download", href="/download", style={'color': '#555'}),
                         dbc.NavLink("The Team", href="https://paceconflictlab.wixsite.com/conflict-research-la/team-4", style={'color': '#555'}),
                         dbc.NavLink("Contact", href="mailto:schincat@tcd.ie", style={'color': '#555'})
                     ]),
@@ -225,6 +230,7 @@ about_layout=html.Div([
                     dbc.Nav([
                         dbc.NavLink("Risk Map", href="/home", style={'color': '#555'}),
                         dbc.NavLink("Monthly Report", href="/report", style={'color': '#555'}),
+                        dbc.NavLink("Download", href="/download", style={'color': '#555'}),
                         dbc.NavLink("The Team", href="https://paceconflictlab.wixsite.com/conflict-research-la/team-4", style={'color': '#555'}),
                         dbc.NavLink("Contact", href="mailto:schincat@tcd.ie", style={'color': '#555'})
                     ]),
@@ -281,6 +287,44 @@ about_layout=html.Div([
         html.Div(html.Img(src='data:image/gif;base64,{}'.format(gif_sce), style={'width': '80%'}), style={'text-align': 'center'})
     ],style={'marginLeft':50})                 
     ])
+
+download_layout= html.Div([
+    dbc.Container([
+            dbc.Row([
+                dbc.Col(html.Div([
+                    html.H2("Report", style={'textAlign': 'left'}),
+                    dbc.Nav([
+                        dbc.NavLink("Risk Map", href="/home", style={'color': '#555'}),
+                        dbc.NavLink("About", href="/about", style={'color': '#555'}),
+                        dbc.NavLink("Monthly Report", href="/report", style={'color': '#555'}),
+                        dbc.NavLink("The Team", href="https://paceconflictlab.wixsite.com/conflict-research-la/team-4", style={'color': '#555'}),
+                        dbc.NavLink("Contact", href="mailto:schincat@tcd.ie", style={'color': '#555'})
+                    ]),
+                    html.Div([
+                        html.A(html.Img(src='data:image/png;base64,{}'.format(pace_png), style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://paceconflictlab.wixsite.com/conflict-research-la'),
+                        html.A(html.Img(src='data:image/png;base64,{}'.format(git_png), style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://github.com/ThomasSchinca/shapefinder_live'),
+                        html.A(html.Img(src='data:image/png;base64,{}'.format(x_logo), style={'height': '5vw', 'width': '5vw', 'marginLeft': '1vw'}), href='https://twitter.com/LabConflict')
+                    ], style={'position': 'absolute', 'right': '3vw', 'top': '1vh'})
+                ]), lg=12, md=12, sm=12)
+            ], style={'backgroundColor': '#D3D3D3', 'padding': '8px', 'marginBottom': 20})
+    ], fluid=True),
+    html.Div([
+        html.H1("Download Our Predictions", style={'marginBottom':20,'textAlign': 'center'}),
+        html.H3("Dataset Available"),
+        dcc.Markdown("""
+        The Pace Risk Map web application is designed to visualize and analyze risk factors related to conflict and fatalities across different countries. It incorporates geographical data, matching models, and historical information to provide insights into potential conflict scenarios.
+        """), 
+        dcc.RadioItems(csv_files, csv_files[0], id="download-id"),
+        html.Div([
+            html.Button("Download CSV", id="btn-download-csv"),
+            dcc.Download(id="download-csv")
+        ],style={'marginTop':50})
+    ],style={'marginLeft':50}),
+
+])                     
+      
+                     
+                     
 
 @webapp.callback(Output("plot_test", "children"), 
               Output("plot_test2", "children"),
@@ -570,8 +614,17 @@ def update_scenar(value,country_name):
                          category_orders={"Category": ["Region","Decade","Scale"]})  
             fig_dis.update_layout(showlegend=False,barmode='stack', plot_bgcolor="white",xaxis_title='', yaxis_title='Percentage (%)')
             fig_dis.update_traces(textposition='inside')
-            return fig_bar,fig_sce,fig_dis
+            return fig_bar,fig_sce,fig_dis                 
 
+@webapp.callback(
+    Output("download-csv", "data"),
+    State("download-id", "value"),
+    Input("btn-download-csv", "n_clicks"),
+    prevent_initial_call=True,
+)
+def download_fun(csv,n_clicks):
+    df = pd.read_csv(f'Historical_Predictions/{csv}',index_col=(0))
+    return dcc.send_data_frame(df.to_csv, f"{csv}")
 
 @webapp.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
@@ -581,6 +634,8 @@ def display_page(pathname):
         return about_layout
     elif pathname == '/report':
         return report_layout
+    elif pathname == '/download':
+        return download_layout
     else:
         return home_layout
     

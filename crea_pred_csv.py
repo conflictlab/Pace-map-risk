@@ -53,12 +53,12 @@ year = df_pred.index[0].strftime("%Y")
 until = df_pred.index[0] + relativedelta(months=-1)
 month_t = until.strftime("%Y")
 s_month_t = until.strftime("%b")
-month_t_l = until.strftime("%B")
+month_t_l = until.strftime("%m")
 six_months = df_pred.index[-1]
 sm_m = six_months.strftime("%b")
 sm_y = six_months.strftime("%Y")
 
-df_pred.to_csv(f'Historical_Predictions/{month_t_l}-{month_t}_{month}-{year}_to_{sm_m}-{sm_y}.csv')
+df_pred.to_csv(f'Historical_Predictions/{month_t}-{month_t_l}_{month}-{year}_to_{sm_m}-{sm_y}.csv')
 
 
 

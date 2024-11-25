@@ -30,6 +30,8 @@ month = datetime.now().strftime("%m")
 for i in range(1,int(month)):
     if i==1:
         df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v24_0_{i}.csv',header=None)
+    if i==10:
+        df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v24_0_{i}.csv',index_col=0)
     else:
         df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v24_0_{i}.csv')
     df_can.columns = df.columns

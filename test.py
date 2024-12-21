@@ -630,11 +630,11 @@ for coun in range(1,5):
     plt.show()
     
     
-    if len(dict_sce_plot[sub_name][1])>2:
+    if len(dict_sce_plot_f[sub_name][1])>2:
         fig, ax = plt.subplot_mosaic([[0,0,0,0,0,3],
                                       [1,1,1,1,1,4],
                                       [2,2,2,2,2,5]], figsize=(10, 8))
-    elif len(dict_sce_plot[sub_name][1])==2:
+    elif len(dict_sce_plot_f[sub_name][1])==2:
         fig, ax = plt.subplot_mosaic([[2,2,2,2,2,9],
                                       [0,0,0,0,0,3],
                                       [0,0,0,0,0,3],
@@ -654,13 +654,13 @@ for coun in range(1,5):
                                       [2,2,2,2,2,5]], figsize=(10, 8))    
     for c in range(3):
         try:
-            if int(dict_sce_plot[sub_name][1].iloc[pd.Series(dict_sce_plot[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100)>=50:
+            if int(dict_sce_plot_f[sub_name][1].iloc[pd.Series(dict_sce_plot_f[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100)>=50:
                 colu="#df2226"
             else:
-                sup1=hex(34+(50-int(dict_sce_plot[sub_name][1].iloc[pd.Series(dict_sce_plot[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100))*3)[2:]
-                sup2=hex(38+(50-int(dict_sce_plot[sub_name][1].iloc[pd.Series(dict_sce_plot[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100))*3)[2:]
+                sup1=hex(34+(50-int(dict_sce_plot_f[sub_name][1].iloc[pd.Series(dict_sce_plot_f[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100))*3)[2:]
+                sup2=hex(38+(50-int(dict_sce_plot_f[sub_name][1].iloc[pd.Series(dict_sce_plot_f[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100))*3)[2:]
                 colu='#df'+str(sup1)+str(sup2)
-            scen = dict_sce_plot[sub_name][1].iloc[pd.Series(dict_sce_plot[sub_name][1].index).sort_values(ascending=False).index[c],:].tolist()
+            scen = dict_sce_plot_f[sub_name][1].iloc[pd.Series(dict_sce_plot_f[sub_name][1].index).sort_values(ascending=False).index[c],:].tolist()
             b = (df_tot_m_plot.loc[:,sub_name] - df_tot_m_plot.loc[:,sub_name].min())/(df_tot_m_plot.loc[:,sub_name].max()-df_tot_m_plot.loc[:,sub_name].min())
             scen = pd.Series(b.tolist()+scen)
             scen = scen*(df_tot_m_plot.loc[:,sub_name].max()-df_tot_m_plot.loc[:,sub_name].min()) + df_tot_m_plot.loc[:,sub_name].min()
@@ -676,7 +676,7 @@ for coun in range(1,5):
             ax[c].spines['right'].set_visible(False)  
             ax[c].spines['bottom'].set_visible(False)
             ax[c].spines['left'].set_visible(False)
-            ax[c+3].text(0.1,0.4,f'Freq = {int(dict_sce_plot[sub_name][1].iloc[pd.Series(dict_sce_plot[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100)}%',fontsize=30,color=colu)
+            ax[c+3].text(0.1,0.4,f'Freq = {int(dict_sce_plot_f[sub_name][1].iloc[pd.Series(dict_sce_plot_f[sub_name][1].index).sort_values(ascending=False).index[c],:].name*100)}%',fontsize=30,color=colu)
             ax[c+3].set_frame_on(False)
             ax[c+3].set_xticks([])
             ax[c+3].set_yticks([])

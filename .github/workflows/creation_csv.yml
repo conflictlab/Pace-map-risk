@@ -2,7 +2,7 @@ name: Create Prediction CSV
 
 on:
   workflow_run:
-      workflows: ["Build and deploy Python app to Google Cloud - Pace Risk Map"]
+      workflows: ["Create PDF"]
       types:
         - completed
   workflow_dispatch:

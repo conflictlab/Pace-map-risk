@@ -2,7 +2,7 @@ name: Create Tweets
 
 on:
   workflow_run:
-      workflows: ["Create Prediction CSV"]
+      workflows: ["Build and deploy Python app to Google Cloud - Pace Risk Map"]
       types:
         - completed
   workflow_dispatch:

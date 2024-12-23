@@ -564,6 +564,7 @@ def plot_horizontal_bar(df,names,ax,typ,maxi):
     for tick in ax.xaxis.get_major_ticks():
         tick.label1.set_color('gray')
 
+rena_rev = {v: k for k, v in rena.items()}
 pred_risk = world.sort_values('value',ascending=False)[['name','value','hist']]
 df_plot =pred_risk.set_index('name').sort_values('value',ascending=True)
 h_train=10
@@ -571,8 +572,10 @@ h=6
 for coun in range(1,5):
     sub_name = df_plot.index[-coun]
     
-    if sub_name in rena:
-        sub_name = rena[sub_name]
+    if sub_name in rena_rev:
+        sub_name_before = rena_rev[sub_name]
+    else:
+        sub_name_before = sub_name
      
     fig,ax = plt.subplots(1, 1, figsize=(10, 6))
     ax.plot(df_tot_m_plot.loc[:,sub_name], marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
@@ -614,13 +617,13 @@ for coun in range(1,5):
     ax = ax.flatten()
     for c in range(4):
         try:
-            ax[c].plot(dict_m[sub_name][c][0], marker='o', color='#808080', linestyle='-', linewidth=2, markersize=8)
+            ax[c].plot(dict_m[sub_name_before][c][0], marker='o', color='#808080', linestyle='-', linewidth=2, markersize=8)
             ax[c].xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%b %y'))
             ax[c].xaxis.set_major_locator(mdates.AutoDateLocator(minticks=4, maxticks=4))
             ax[c].grid(axis='y', linestyle='--', alpha=0.7)
             ax[c].tick_params(axis='x', labelsize=15,color='#808080')
             ax[c].tick_params(axis='y', labelsize=15,color='#808080')
-            ax[c].set_title(dict_m[sub_name][c][0].name, fontsize=20, font='Poppins',color='#808080')
+            ax[c].set_title(dict_m[sub_name_before][c][0].name, fontsize=20, font='Poppins',color='#808080')
             ax[c].set_frame_on(False)
         except:
             ax[c].set_frame_on(False)

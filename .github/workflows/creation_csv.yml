@@ -2,7 +2,7 @@ name: Create Prediction CSV
 
 on:
   workflow_run:
-      workflows: ["Create PDF"]
+      workflows: ["Create HTML"]
       types:
         - completed
   workflow_dispatch:

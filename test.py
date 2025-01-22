@@ -27,6 +27,8 @@ from PIL import Image
 df = pd.read_csv("https://ucdp.uu.se/downloads/ged/ged241-csv.zip",
                   parse_dates=['date_start','date_end'],low_memory=False)
 month = datetime.now().strftime("%m")
+if month=='01':
+   month='13'
 for i in range(1,int(month)):
     if i==1:
         df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v24_0_{i}.csv',header=None)

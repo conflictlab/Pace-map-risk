@@ -26,16 +26,18 @@ from PIL import Image
 
 df = pd.read_csv("https://ucdp.uu.se/downloads/ged/ged241-csv.zip",
                   parse_dates=['date_start','date_end'],low_memory=False)
+df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v24_01_24_12.csv')
+df_can.columns = df.columns
+df_can['date_start'] = pd.to_datetime(df_can['date_start'])
+df_can['date_end'] = pd.to_datetime(df_can['date_end'])
+df_can = df_can.drop_duplicates()
+df= pd.concat([df,df_can],axis=0)
 month = datetime.now().strftime("%m")
+
 if month=='01':
    month='13'
 for i in range(1,int(month)):
-    if i==1:
-        df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v24_0_{i}.csv',header=None)
-    if i==10:
-        df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v24_0_{i}.csv',index_col=0)
-    else:
-        df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v24_0_{i}.csv')
+    df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v25_0_{i}.csv')
     df_can.columns = df.columns
     df_can['date_start'] = pd.to_datetime(df_can['date_start'])
     df_can['date_end'] = pd.to_datetime(df_can['date_end'])
@@ -56,7 +58,6 @@ for i in df.country.unique():
 df_tot_m=df_tot.resample('M').sum()
 last_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
 df_tot_m= df_tot_m.loc[:last_month,:]
-df_tot_m = df_tot_m.drop(['Saint Kitts and Nevis'],axis=1)
 df_tot_m = df_tot_m.drop(['Antigua & Barbuda'],axis=1)
 df_tot_m.to_csv('Conf.csv')
 del df

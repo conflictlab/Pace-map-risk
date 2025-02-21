@@ -59,6 +59,7 @@ df_tot_m=df_tot.resample('M').sum()
 last_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
 df_tot_m= df_tot_m.loc[:last_month,:]
 df_tot_m = df_tot_m.drop(['Antigua & Barbuda'],axis=1)
+df_tot_m = df_tot_m.drop(['Costa Rica'],axis=1)
 df_tot_m.to_csv('Conf.csv')
 del df
 del df_tot

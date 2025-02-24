@@ -30,7 +30,7 @@ Explore more:
 🗺️ Webapp https://thomasschinca.github.io/Pace-map-risk/
 📄 Monthly Report https://www.forecastlab.org/predictionmap
 💻 Github repo https://github.com/ThomasSchinca/Pace-map-risk
-To send it : https://github.com/ThomasSchinca/Pace-map-risk/actions/workflows/send_tweet.yml"""
+To send it : https://github.com/ThomasSchinca/Post_blue_twitter/actions/workflows/main.yml"""
 receiver_email = "schincat@tcd.ie"
 
 message = MIMEMultipart()
@@ -63,8 +63,8 @@ with smtplib.SMTP(SMTP_SERVER, PORT) as server:
     server.login(EMAIL, PASSWORD)
     server.sendmail(EMAIL, receiver_email, text)
     
-    
-    
+count = count.add(1)
+count.to_csv('tweet_count.csv') 
     
     
     

@@ -196,7 +196,7 @@ for i in range(10):
     
 l_coun=pd.DataFrame(l_coun)
 l_coun.to_csv('tweet_text.csv')
-count=pd.Series([0])
+count=pd.Series([-1])
 count.to_csv('tweet_count.csv')   
 
 

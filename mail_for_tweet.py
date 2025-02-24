@@ -20,8 +20,8 @@ PASSWORD = 'hfzd vsdd zrjo spnt'
 
 count = pd.read_csv('tweet_count.csv',index_col=0)
 tweet_text = pd.read_csv('tweet_text.csv',index_col=0) 
-country=tweet_text.iloc[count.iloc[0,0],0]
-sta=tweet_text.iloc[count.iloc[0,0],1]
+country=tweet_text.iloc[count.iloc[0,0]+1,0]
+sta=tweet_text.iloc[count.iloc[0,0]+1,1]
 
 subject = "Tweet of the week"
 body = f"""Hello Thomas, This is the tweet tentative:
@@ -40,7 +40,7 @@ message["Subject"] = subject
 
 message.attach(MIMEText(body, "plain"))
 
-filename = f'Images/{count.iloc[0,0]}_c.png'
+filename = f'Images/{count.iloc[0,0]+1}_c.png'
 
 with open(filename, "rb") as attachment:
     part = MIMEBase("application", "octet-stream")

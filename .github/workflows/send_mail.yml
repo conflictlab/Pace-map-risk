@@ -22,4 +22,13 @@ jobs:
           pip install pandas
 
       - name: Run Python script
-        run: python mail_for_tweet.py
+        run: |
+          python mail_for_tweet.py
+      - name: Add and commit
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: GitHub Actions
+          author_email: 41898282+github-actions[bot]@users.noreply.github.com
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          message: "chore: Update Tweet count"
+          add: "*.csv"

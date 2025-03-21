@@ -58,8 +58,6 @@ for i in df.country.unique():
 df_tot_m=df_tot.resample('M').sum()
 last_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
 df_tot_m= df_tot_m.loc[:last_month,:]
-df_tot_m = df_tot_m.drop(['Antigua & Barbuda'],axis=1)
-df_tot_m = df_tot_m.drop(['Costa Rica'],axis=1)
 df_tot_m.to_csv('Conf.csv')
 del df
 del df_tot
@@ -67,6 +65,8 @@ del df_tot
 
 
 df_conf=pd.read_csv('reg_coun.csv',index_col=0,squeeze=True)
+common_columns = df_tot_m.columns.intersection(df_conf.index)
+df_tot_m = df_tot_m.loc[:, common_columns]
 df_next = {0:pd.DataFrame(columns=df_tot_m.columns,index=range(16)),1:pd.DataFrame(columns=df_tot_m.columns,index=range(16)),2:pd.DataFrame(columns=df_tot_m.columns,index=range(16))}
 df_perc = pd.DataFrame(columns=df_tot_m.columns,index=range(3))
 dict_sce = {i :[[],[],[]] for i in df_tot_m.columns}

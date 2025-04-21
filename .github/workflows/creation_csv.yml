@@ -1,4 +1,4 @@
-name: Create Prediction CSV
+name: CSV
 
 on:
   workflow_run:

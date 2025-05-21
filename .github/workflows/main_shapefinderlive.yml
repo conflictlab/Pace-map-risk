@@ -1,14 +1,10 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
-
 name: Build and deploy Python app to Google Cloud - Pace Risk Map
 
 on:
   workflow_run:
-      workflows: ["CSV"]
-      types:
-        - completed
+    workflows: ["CSV"]
+    types:
+      - completed
   workflow_dispatch:
 
 jobs:
@@ -18,30 +14,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-    
+
       - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v2 # Updated to a supported version
+        uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY_JSON }} # Updated key name
-  
+          credentials_json: ${{ secrets.GCP_SA_KEY_JSON }}
+
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
-          version: '461.0.0'  # Replace with the version you want
+          version: '461.0.0'
           project_id: pace-risk-map
 
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker us-east1-docker.pkg.dev
 
-      - name: Building (🏗)
-        run: |-
-          gcloud builds submit \
-            --tag gcr.io/pace-risk-map/pace-risk-map
+      - name: Build and Push Docker Image to Artifact Registry 🐳
+        run: |
+          docker build -t us-east1-docker.pkg.dev/pace-risk-map/risk-map-repo/pace-risk-map .
+          docker push us-east1-docker.pkg.dev/pace-risk-map/risk-map-repo/pace-risk-map
 
-      # Setup gcloud CLI
-      - name: Deploy (🚀)
+      - name: Deploy to Cloud Run 🚀
         uses: google-github-actions/deploy-cloudrun@v1
         with:
-          service:  pace-risk-map
-          image: gcr.io/pace-risk-map/pace-risk-map
+          service: pace-risk-map
+          image: us-east1-docker.pkg.dev/pace-risk-map/risk-map-repo/pace-risk-map
           region: us-east1
           credentials: ${{ secrets.GCP_SA_KEY_JSON }}
           project_id: pace-risk-map

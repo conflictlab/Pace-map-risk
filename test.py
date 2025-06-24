@@ -24,14 +24,8 @@ from matplotlib import font_manager
 from PIL import Image
 
 
-df = pd.read_csv("https://ucdp.uu.se/downloads/ged/ged241-csv.zip",
+df = pd.read_csv("https://ucdp.uu.se/downloads/ged/ged251-csv.zip",
                   parse_dates=['date_start','date_end'],low_memory=False)
-df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v24_01_24_12.csv')
-df_can.columns = df.columns
-df_can['date_start'] = pd.to_datetime(df_can['date_start'])
-df_can['date_end'] = pd.to_datetime(df_can['date_end'])
-df_can = df_can.drop_duplicates()
-df= pd.concat([df,df_can],axis=0)
 month = datetime.now().strftime("%m")
 
 if month=='01':

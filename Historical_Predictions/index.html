@@ -27,18 +27,19 @@
     .muted { color:#666; font-size:.9rem; }
     progress { width: 280px; height: 12px; }
   </style>
-  <!-- ZIP + save helpers (well-known, tiny, and cache-friendly CDNs) -->
+  <!-- ZIP + save helpers -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js" defer></script>
 </head>
 <body>
   <h1>CSV Downloads</h1>
-  <div class="hint">Select multiple files and download them together as a ZIP.</div>
+  <div class="hint">Tick individual files for a custom ZIP, or download everything at once.</div>
 
   <!-- bulk actions toolbar -->
   <div class="toolbar">
     <label><input type="checkbox" id="selectAll"> Select all</label>
-    <button id="downloadZip" disabled>Download selected as ZIP</button>
+    <button id="downloadZipSelected" disabled>Download selected as ZIP</button>
+    <button id="downloadZipAll">Download all as ZIP</button>
     <span id="selCount" class="muted">0 selected</span>
     <span id="zipStatus" class="muted"></span>
   </div>
@@ -59,8 +60,9 @@
 
     // State for selections
     const selected = new Set();
+    let allCsvPaths = [];
 
-    // Simple CSV parser for previews (handles commas and quoted fields reasonably well)
+    // Simple CSV parser for previews
     function parseCSV(text) {
       const rows = [];
       let cur = "", row = [], inQuotes = false;
@@ -85,7 +87,7 @@
     function updateToolbar() {
       const count = selected.size;
       document.getElementById("selCount").textContent = `${count} selected`;
-      document.getElementById("downloadZip").disabled = count === 0;
+      document.getElementById("downloadZipSelected").disabled = count === 0;
       // keep selectAll in sync
       const allBoxes = Array.from(document.querySelectorAll('input[type="checkbox"].filebox'));
       const allChecked = allBoxes.length > 0 && allBoxes.every(cb => cb.checked);
@@ -107,9 +109,10 @@
           return;
         }
         filesEl.innerHTML = "";
+        allCsvPaths = csvs.map(f => f.path || `${CSV_FOLDER}/${f.name}`);
+
         for (const f of csvs) {
           const pathInRepo = f.path || `${CSV_FOLDER}/${f.name}`;
-          const id = pathInRepo; // unique enough
           const card = document.createElement("div");
           card.className = "file-card";
           card.innerHTML = `
@@ -136,7 +139,7 @@
           });
         });
 
-        // download single buttons → fetch → Blob → save
+        // per-file download
         filesEl.querySelectorAll("button.dl").forEach(btn => {
           btn.addEventListener("click", async () => {
             const path = btn.getAttribute("data-path");
@@ -160,7 +163,7 @@
           });
         });
 
-        // preview buttons
+        // preview
         filesEl.querySelectorAll("button.pv").forEach(btn => {
           btn.addEventListener("click", async () => {
             const path = btn.getAttribute("data-path");
@@ -216,3 +219,60 @@
       } catch (e) {
         document.getElementById("files").innerHTML = "";
         document.getElementById("error").textContent = e.message;
+      }
+    }
+
+    async function buildZipFromPaths(paths, zipLabelPrefix) {
+      const status = document.getElementById("zipStatus");
+      status.innerHTML = `Preparing ZIP… <span class="spinner"></span>`;
+      try {
+        const zip = new JSZip();
+        let done = 0;
+        for (const path of paths) {
+          const resp = await fetch(cdnBase(path));
+          if (!resp.ok) throw new Error(`Failed to fetch ${path}`);
+          const blob = await resp.blob();
+          const filename = path.split("/").pop();
+          zip.file(filename, blob);
+          done++;
+          status.textContent = `Added ${done}/${paths.length}…`;
+        }
+        status.textContent = "Compressing…";
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        const zipName = `${zipLabelPrefix}-${new Date().toISOString().slice(0,10)}.zip`;
+        saveAs(zipBlob, zipName);
+        status.textContent = "Done.";
+      } catch (err) {
+        alert(`Could not build ZIP: ${err.message}`);
+        status.textContent = "";
+      }
+    }
+
+    // Bulk actions
+    document.addEventListener("change", (e) => {
+      if (e.target && e.target.id === "selectAll") {
+        const check = e.target.checked;
+        document.querySelectorAll('input[type="checkbox"].filebox').forEach(cb => {
+          cb.checked = check;
+          const path = cb.getAttribute("data-path");
+          if (check) selected.add(path); else selected.delete(path);
+        });
+        updateToolbar();
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (e.target && e.target.id === "downloadZipSelected") {
+        const paths = Array.from(selected);
+        if (paths.length > 0) buildZipFromPaths(paths, `${CSV_FOLDER || 'csv'}-selected`);
+      }
+      if (e.target && e.target.id === "downloadZipAll") {
+        if (allCsvPaths.length > 0) buildZipFromPaths(allCsvPaths, `${CSV_FOLDER || 'csv'}-all`);
+      }
+    });
+
+    // Kick off
+    listCSVs();
+  </script>
+</body>
+</html>

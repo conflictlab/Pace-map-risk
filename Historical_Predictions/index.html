@@ -8,13 +8,15 @@
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 2rem; }
     h1 { margin-bottom: 0.25rem; }
     .hint { color: #555; margin-bottom: 1rem; }
+    .toolbar { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin: .75rem 0 1rem; }
     .file-card { border: 1px solid #ddd; border-radius: 12px; padding: 1rem; margin: 1rem 0; }
     .row { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-    button, a.btn {
+    .row strong { margin-left: .25rem; }
+    button, a.btn, .btn {
       appearance: none; border: 1px solid #ccc; background: #fafafa; padding: 0.5rem 0.8rem;
       border-radius: 8px; cursor: pointer; text-decoration: none; color: inherit;
     }
-    button:hover, a.btn:hover { background: #f0f0f0; }
+    button:hover, a.btn:hover, .btn:hover { background: #f0f0f0; }
     table { border-collapse: collapse; width: 100%; margin-top: 0.75rem; }
     th, td { border: 1px solid #e5e5e5; padding: 0.4rem 0.5rem; font-size: 0.95rem; }
     th { background: #fafafa; text-align: left; }
@@ -22,11 +24,25 @@
     .spinner { display: inline-block; width: 1em; height: 1em; border: 2px solid #999; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-left: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .err { color: #b00020; }
+    .muted { color:#666; font-size:.9rem; }
+    progress { width: 280px; height: 12px; }
   </style>
+  <!-- ZIP + save helpers (well-known, tiny, and cache-friendly CDNs) -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js" defer></script>
 </head>
 <body>
   <h1>CSV Downloads</h1>
-  <div class="hint">Files sourced from a GitHub repository and updated automatically on page load.</div>
+  <div class="hint">Select multiple files and download them together as a ZIP.</div>
+
+  <!-- bulk actions toolbar -->
+  <div class="toolbar">
+    <label><input type="checkbox" id="selectAll"> Select all</label>
+    <button id="downloadZip" disabled>Download selected as ZIP</button>
+    <span id="selCount" class="muted">0 selected</span>
+    <span id="zipStatus" class="muted"></span>
+  </div>
+
   <div id="files"></div>
   <div id="error" class="err"></div>
 
@@ -40,6 +56,9 @@
     // Build API and CDN URLs
     const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${CSV_FOLDER}?ref=${BRANCH}`;
     const cdnBase = (path) => `https://cdn.jsdelivr.net/gh/${OWNER}/${REPO}@${BRANCH}/${path}`;
+
+    // State for selections
+    const selected = new Set();
 
     // Simple CSV parser for previews (handles commas and quoted fields reasonably well)
     function parseCSV(text) {
@@ -63,6 +82,16 @@
       return rows;
     }
 
+    function updateToolbar() {
+      const count = selected.size;
+      document.getElementById("selCount").textContent = `${count} selected`;
+      document.getElementById("downloadZip").disabled = count === 0;
+      // keep selectAll in sync
+      const allBoxes = Array.from(document.querySelectorAll('input[type="checkbox"].filebox'));
+      const allChecked = allBoxes.length > 0 && allBoxes.every(cb => cb.checked);
+      document.getElementById("selectAll").checked = allChecked;
+    }
+
     async function listCSVs() {
       const filesEl = document.getElementById("files");
       const errEl = document.getElementById("error");
@@ -80,11 +109,15 @@
         filesEl.innerHTML = "";
         for (const f of csvs) {
           const pathInRepo = f.path || `${CSV_FOLDER}/${f.name}`;
+          const id = pathInRepo; // unique enough
           const card = document.createElement("div");
           card.className = "file-card";
           card.innerHTML = `
             <div class="row">
-              <strong>${f.name}</strong>
+              <label style="display:flex;align-items:center;gap:.35rem;">
+                <input type="checkbox" class="filebox" data-path="${pathInRepo}">
+                <strong>${f.name}</strong>
+              </label>
               <a class="btn" href="${cdnBase(pathInRepo)}" target="_blank" rel="noopener">Open raw</a>
               <button data-path="${pathInRepo}" class="dl">Download</button>
               <button data-path="${pathInRepo}" class="pv">Preview</button>
@@ -94,7 +127,16 @@
           filesEl.appendChild(card);
         }
 
-        // Wire up Download buttons to fetch → Blob → save with filename
+        // selection handlers
+        filesEl.querySelectorAll("input.filebox").forEach(box => {
+          box.addEventListener("change", () => {
+            const path = box.getAttribute("data-path");
+            if (box.checked) selected.add(path); else selected.delete(path);
+            updateToolbar();
+          });
+        });
+
+        // download single buttons → fetch → Blob → save
         filesEl.querySelectorAll("button.dl").forEach(btn => {
           btn.addEventListener("click", async () => {
             const path = btn.getAttribute("data-path");
@@ -118,7 +160,7 @@
           });
         });
 
-        // Wire up Preview buttons to render a small HTML table
+        // preview buttons
         filesEl.querySelectorAll("button.pv").forEach(btn => {
           btn.addEventListener("click", async () => {
             const path = btn.getAttribute("data-path");
@@ -131,7 +173,6 @@
               if (!resp.ok) throw new Error("Preview fetch failed");
               const text = await resp.text();
               const rows = parseCSV(text);
-              // Limit preview to first 200 rows for performance
               const previewRows = rows.slice(0, 200);
               const table = document.createElement("table");
               if (previewRows.length) {
@@ -170,13 +211,8 @@
           });
         });
 
+        updateToolbar();
+
       } catch (e) {
         document.getElementById("files").innerHTML = "";
         document.getElementById("error").textContent = e.message;
-      }
-    }
-
-    listCSVs();
-  </script>
-</body>
-</html>

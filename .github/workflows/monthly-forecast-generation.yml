@@ -1,10 +1,11 @@
-name: Generate Monthly Forecasts
+name: Generate Monthly Forecasts (Sequential - DISABLED)
 
 on:
-  schedule:
-    # Run on the 1st of every month at 1:00 AM UTC (before website sync)
-    - cron: '0 1 1 * *'
-  workflow_dispatch:  # Allow manual triggering
+  # schedule:
+  #   # DISABLED: Use monthly-forecast-generation-parallel.yml instead
+  #   # Run on the 1st of every month at 1:00 AM UTC (before website sync)
+  #   - cron: '0 1 1 * *'
+  workflow_dispatch:  # Allow manual triggering as fallback
 
 jobs:
   generate:

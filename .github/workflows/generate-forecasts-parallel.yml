@@ -1,14 +1,9 @@
-name: Generate Monthly Forecasts (Parallel)
+name: Generate Forecasts (Parallel)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/monthly-forecast-generation-parallel.yml'
   schedule:
-    - cron: '0 1 1 * *'  # 1st of every month at 1:00 AM UTC (before website sync at 3 AM)
-  workflow_dispatch:  # Allow manual triggering
+    - cron: '0 1 1 * *'
+  workflow_dispatch:
 
 jobs:
   prepare-data:

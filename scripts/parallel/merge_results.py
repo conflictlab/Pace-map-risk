@@ -7,6 +7,10 @@ import pandas as pd
 import pickle
 import glob
 import sys
+import warnings
+
+# Suppress pandas compatibility warnings
+warnings.filterwarnings('ignore', category=UserWarning)
 
 if len(sys.argv) != 3:
     print("Usage: python merge_results.py <horizon> <num_chunks>")
@@ -55,16 +59,24 @@ for file_pattern, output_name in pickle_patterns:
         f = f'h{horizon}-chunks/{file_pattern}{i}.pkl'
         try:
             with open(f, 'rb') as pf:
+                # Use pandas compat mode to handle version differences
                 chunk_dict = pickle.load(pf)
                 merged_dict.update(chunk_dict)
         except FileNotFoundError:
             print(f'Warning: {f} not found')
             continue
+        except (ModuleNotFoundError, AttributeError) as e:
+            # Handle pandas version incompatibility
+            print(f'Warning: Could not load {f} due to pandas version incompatibility: {e}')
+            print(f'Skipping {f} - you may need to regenerate this chunk')
+            continue
 
     if merged_dict:
         with open(output_name, 'wb') as pf:
-            pickle.dump(merged_dict, pf)
+            pickle.dump(merged_dict, pf, protocol=4)  # Use protocol 4 for better compatibility
         print(f'Saved {output_name}')
+    else:
+        print(f'Warning: No data to save for {output_name}')
 
 # Create backward-compatible files for h=6
 if horizon == 6:

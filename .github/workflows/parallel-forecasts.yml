@@ -23,8 +23,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install pandas numpy geopandas matplotlib seaborn shapely scipy scikit-learn
-          pip install -r requirements.txt || true
+          pip install -r requirements.txt
+          pip install seaborn scikit-learn
 
       - name: Download and process UCDP data
         run: python scripts/parallel/prepare_data.py
@@ -61,8 +61,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install pandas numpy geopandas matplotlib seaborn shapely scipy scikit-learn
-          pip install -r requirements.txt || true
+          pip install -r requirements.txt
+          pip install seaborn scikit-learn
 
       - name: Download processed data
         uses: actions/download-artifact@v4
@@ -109,8 +109,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install pandas numpy geopandas matplotlib seaborn shapely scipy scikit-learn
-          pip install -r requirements.txt || true
+          pip install -r requirements.txt
+          pip install seaborn scikit-learn
 
       - name: Download processed data
         uses: actions/download-artifact@v4
@@ -153,7 +153,7 @@ jobs:
           python-version: '3.10'
 
       - name: Install dependencies
-        run: pip install pandas numpy
+        run: pip install pandas==1.4.0 numpy==1.22.3
 
       - name: Download h6 chunks
         uses: actions/download-artifact@v4

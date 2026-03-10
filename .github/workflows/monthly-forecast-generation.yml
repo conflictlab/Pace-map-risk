@@ -34,7 +34,7 @@ jobs:
       - name: Generate forecasts
         run: |
           python generate_forecasts.py
-        timeout-minutes: 60
+        timeout-minutes: 180
 
       - name: Organize outputs for Historical_Predictions
         run: |

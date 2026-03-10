@@ -28,6 +28,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install pandas numpy geopandas matplotlib seaborn shapely scipy scikit-learn pillow
+          pip install dtaidistance
           pip install -r requirements.txt || true
 
       - name: Generate forecasts

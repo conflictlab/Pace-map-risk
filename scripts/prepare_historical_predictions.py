@@ -36,16 +36,24 @@ def main():
     h6_filename = f"Historical_Predictions/{forecast_month}_{h6_start}_to_{h6_end}_h6.csv"
     h12_filename = f"Historical_Predictions/{forecast_month}_{h6_start}_to_{h12_end}_h12.csv"
 
-    # Save the CSVs
+    # Save the individual h6 and h12 CSVs
     h6.to_csv(h6_filename)
     h12.to_csv(h12_filename)
 
     print(f"✓ Created {h6_filename}")
     print(f"✓ Created {h12_filename}")
 
+    # Create a COMBINED file for website compatibility
+    # Website sync expects a single CSV with date column + country columns
+    # Use h6 forecast (6-month) as the main output matching old format
+    combined_filename = f"Historical_Predictions/{forecast_month}.csv"
+    h6.to_csv(combined_filename)
+    print(f"✓ Created {combined_filename} (combined format for website)")
+
     # Also create a "latest" symlink or copy for easy access
     h6.to_csv('Historical_Predictions/latest_h6.csv')
     h12.to_csv('Historical_Predictions/latest_h12.csv')
+    h6.to_csv('Historical_Predictions/latest.csv')
 
     # Copy historical data
     hist = pd.read_csv('Hist.csv', index_col=0)

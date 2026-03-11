@@ -27,6 +27,8 @@ jobs:
           pip install seaborn scikit-learn
 
       - name: Download and process UCDP data
+        env:
+          UCDP_API_TOKEN: ${{ secrets.UCDP_API_TOKEN }}
         run: python scripts/parallel/prepare_data.py
 
       - name: Save processed data

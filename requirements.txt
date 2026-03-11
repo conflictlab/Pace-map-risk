@@ -11,6 +11,7 @@ pandas==1.4.0
 plotly==5.11.0
 python_dateutil==2.8.2
 reportlab==4.0.7
+requests
 scipy
 setuptools==65.5.1
 Shapely==1.8.4

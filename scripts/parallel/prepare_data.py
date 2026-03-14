@@ -70,8 +70,21 @@ try:
     df_candidate = fetch_ucdp_api('26.0.1')
     print(f'  Candidate data: {len(df_candidate)} events')
 
+    # Normalize country names between v25.1 and v26.0.1
+    # v26.0.1 uses different naming conventions that need to be standardized
+    country_name_mapping = {
+        'DR Congo (Zaire)': 'Dem. Rep. Congo',
+        'Myanmar (Burma)': 'Myanmar',
+        'Russia (Soviet Union)': 'Russia',
+        'South Sudan': 'S. Sudan'
+    }
+
     # Ensure candidate data has same column structure as main dataset
     if not df_candidate.empty:
+        # Apply country name normalization to candidate data
+        df_candidate['country'] = df_candidate['country'].replace(country_name_mapping)
+        print(f'  Applied country name normalization to candidate data')
+
         # Combine datasets
         df = pd.concat([df, df_candidate], axis=0)
         df = df.drop_duplicates(subset=['id'], keep='last')

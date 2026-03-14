@@ -56,22 +56,29 @@ def fetch_ucdp_api(version, pagesize=1000):
 print('Loading UCDP data via API...')
 
 # Fetch main GED dataset (version 25.1 - covers 1989-2024)
-df_main = fetch_ucdp_api('25.1')
+df = fetch_ucdp_api('25.1')
 
 # Fetch latest candidate data (version 26.0.1 - monthly release with most recent data)
+# Note: Unlike the old CSV approach which had separate files per month,
+# the API returns all candidate events at once
+month = datetime.now().strftime('%m')
+if month == '01':
+    month = '13'
+
 print('\nFetching latest candidate data (version 26.0.1)...')
 try:
     df_candidate = fetch_ucdp_api('26.0.1')
     print(f'  Candidate data: {len(df_candidate)} events')
 
-    # Combine datasets
-    df = pd.concat([df_main, df_candidate], axis=0)
-    df = df.drop_duplicates(subset=['id'], keep='last')
-    print(f'\nCombined dataset: {len(df)} unique events')
+    # Ensure candidate data has same column structure as main dataset
+    if not df_candidate.empty:
+        # Combine datasets
+        df = pd.concat([df, df_candidate], axis=0)
+        df = df.drop_duplicates(subset=['id'], keep='last')
+        print(f'\nCombined dataset: {len(df)} unique events')
 except Exception as e:
     print(f'Note: Could not load candidate data v26.0.1: {e}')
     print('Using main dataset only (v25.1)')
-    df = df_main
 
 # Convert date columns to datetime
 df['date_start'] = pd.to_datetime(df['date_start'])

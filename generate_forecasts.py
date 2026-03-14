@@ -154,20 +154,20 @@ def generate_forecasts(df_tot_m, df_conf, h=6, h_train=10, output_suffix=''):
             pred_tot.append(pd.DataFrame(np.zeros((h, 3))))
             pred_raw.append(pd.DataFrame(np.zeros((h, 3))))
 
-    # Process and save predictions (mean)
-    pred_df = [df.iloc[:, 0] for df in pred_raw]
+    # Process and save predictions (mean) - SCALE to historical units
+    pred_df = [df.iloc[:, 0] for df in pred_tot]
     pred_df = pd.concat(pred_df, axis=1)
     pred_df.columns = df_tot_m.columns
     pred_df = rename_countries(pred_df)
 
-    # Process and save predictions (min)
-    pred_df_min = [df.iloc[:, 1] for df in pred_raw]
+    # Process and save predictions (min) - SCALE to historical units
+    pred_df_min = [df.iloc[:, 1] for df in pred_tot]
     pred_df_min = pd.concat(pred_df_min, axis=1)
     pred_df_min.columns = df_tot_m.columns
     pred_df_min = rename_countries(pred_df_min)
 
-    # Process and save predictions (max)
-    pred_df_max = [df.iloc[:, 2] for df in pred_raw]
+    # Process and save predictions (max) - SCALE to historical units
+    pred_df_max = [df.iloc[:, 2] for df in pred_tot]
     pred_df_max = pd.concat(pred_df_max, axis=1)
     pred_df_max.columns = df_tot_m.columns
     pred_df_max = rename_countries(pred_df_max)

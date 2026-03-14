@@ -15,7 +15,7 @@ if not API_TOKEN:
     print('Please set your UCDP API token as an environment variable')
     sys.exit(1)
 
-def fetch_ucdp_api(version, pagesize=1000):
+def fetch_ucdp_api(version, pagesize=10000):
     """Fetch UCDP GED data from API with pagination"""
     base_url = f'https://ucdpapi.pcr.uu.se/api/gedevents/{version}'
     headers = {'x-ucdp-access-token': API_TOKEN}

@@ -227,16 +227,18 @@ def main():
 
     if month == '01':
         month = '13'
+    # Use Candidate GED monthly CSVs matching the current GED major stream (e.g., 2026 -> v26_0_{i}.csv)
+    major = int(datetime.now().strftime('%y'))  # 2026 -> 26
     for i in range(1, int(month)):
         try:
-            df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v25_0_{i}.csv')
+            df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{major}_0_{i}.csv')
             df_can.columns = df.columns
             df_can['date_start'] = pd.to_datetime(df_can['date_start'])
             df_can['date_end'] = pd.to_datetime(df_can['date_end'])
             df_can = df_can.drop_duplicates()
             df = pd.concat([df, df_can], axis=0)
         except:
-            print(f"   Note: Could not load candidate data for month {i}")
+            print(f"   Note: Could not load candidate data for v{major}_0_{i}.csv")
 
     print("2. Processing data...")
     df_tot = pd.DataFrame(columns=df.country.unique(),

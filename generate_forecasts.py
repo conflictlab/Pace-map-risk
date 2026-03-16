@@ -240,6 +240,19 @@ def main():
         except:
             print(f"   Note: Could not load candidate data for v{major}_0_{i}.csv")
 
+    # Backfill previous GED stream for the full prior year (e.g., 2025 -> v25_0_{1..12}.csv)
+    prev_major = major - 1
+    for i in range(1, 13):
+        try:
+            df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{prev_major}_0_{i}.csv')
+            df_can.columns = df.columns
+            df_can['date_start'] = pd.to_datetime(df_can['date_start'])
+            df_can['date_end'] = pd.to_datetime(df_can['date_end'])
+            df_can = df_can.drop_duplicates()
+            df = pd.concat([df, df_can], axis=0)
+        except:
+            print(f"   Note: Could not load candidate data for v{prev_major}_0_{i}.csv")
+
     print("2. Processing data...")
     df_tot = pd.DataFrame(columns=df.country.unique(),
                          index=pd.date_range(df.date_start.min(), df.date_end.max()))

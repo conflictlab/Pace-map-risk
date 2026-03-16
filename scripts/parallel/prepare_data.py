@@ -36,6 +36,22 @@ for i in range(1, int(month)):
     except Exception as e:
         print(f"  Note: Could not load {url}: {e}")
 
+# 2b) Backfill previous year's candidates (full year)
+prev_major = major - 1
+print(f"Backfilling Candidate GED monthly CSVs for v{prev_major} (1..12)…")
+for i in range(1, 13):
+    url = f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{prev_major}_0_{i}.csv'
+    try:
+        df_can = pd.read_csv(url)
+        df_can.columns = df.columns
+        df_can['date_start'] = pd.to_datetime(df_can['date_start'])
+        df_can['date_end'] = pd.to_datetime(df_can['date_end'])
+        df_can = df_can.drop_duplicates()
+        df = pd.concat([df, df_can], axis=0)
+        print(f"  ✓ Added backfill month {i} (v{prev_major}_0_{i})")
+    except Exception as e:
+        print(f"  Note: Could not load {url}: {e}")
+
 # Normalize country names to standard set used downstream
 country_name_mapping = {
     'DR Congo (Zaire)': 'Dem. Rep. Congo',

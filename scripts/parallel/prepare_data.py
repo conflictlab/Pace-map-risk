@@ -1,103 +1,63 @@
 #!/usr/bin/env python3
 """
-Download and prepare UCDP data for parallel forecast generation using UCDP API
+Download and prepare UCDP data for parallel forecast generation using public downloads
+ - Base GED: https://ucdp.uu.se/downloads/ged/ged251-csv.zip
+ - Candidate GED monthly CSVs: https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{YY}_0_{i}.csv
 """
 import pandas as pd
 from datetime import datetime, timedelta
-import requests
-import os
-import sys
 
-# Get API token from environment variable
-API_TOKEN = os.environ.get('UCDP_API_TOKEN')
-if not API_TOKEN:
-    print('ERROR: UCDP_API_TOKEN environment variable not set')
-    print('Please set your UCDP API token as an environment variable')
-    sys.exit(1)
+print('Loading UCDP data from public downloads…')
 
-def fetch_ucdp_api(version, pagesize=10000):
-    """Fetch UCDP GED data from API with pagination"""
-    base_url = f'https://ucdpapi.pcr.uu.se/api/gedevents/{version}'
-    headers = {'x-ucdp-access-token': API_TOKEN}
+# 1) Base GED dataset (v25.1 ZIP)
+df = pd.read_csv(
+    'https://ucdp.uu.se/downloads/ged/ged251-csv.zip',
+    parse_dates=['date_start', 'date_end'],
+    low_memory=False
+)
 
-    all_events = []
-    page = 0
-
-    print(f'Fetching UCDP GED version {version}...')
-
-    while True:
-        params = {'pagesize': pagesize, 'page': page}
-        response = requests.get(base_url, headers=headers, params=params)
-
-        if response.status_code != 200:
-            print(f'Error fetching page {page}: HTTP {response.status_code}')
-            break
-
-        data = response.json()
-        events = data.get('Result', [])
-
-        if not events:
-            break
-
-        all_events.extend(events)
-
-        total_pages = data.get('TotalPages', 0)
-        print(f'  Downloaded page {page + 1}/{total_pages} ({len(all_events)} events so far)', end='\r')
-
-        page += 1
-
-        # Stop if we've reached the last page
-        if page >= total_pages:
-            break
-
-    print(f'\n  Total events downloaded: {len(all_events)}')
-    return pd.DataFrame(all_events)
-
-print('Loading UCDP data via API...')
-
-# Fetch main GED dataset (version 25.1 - covers 1989-2024)
-df = fetch_ucdp_api('25.1')
-
-# Fetch latest candidate data (version 26.0.1 - monthly release with most recent data)
-# Note: Unlike the old CSV approach which had separate files per month,
-# the API returns all candidate events at once
+# 2) Candidate GED monthly CSVs for current GED stream (e.g., 2026 -> v26)
 month = datetime.now().strftime('%m')
 if month == '01':
     month = '13'
+major = int(datetime.now().strftime('%y'))  # 2026 -> 26
+print(f"Fetching Candidate GED monthly CSVs for v{major} (1..{int(month)-1})…")
+for i in range(1, int(month)):
+    url = f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{major}_0_{i}.csv'
+    try:
+        df_can = pd.read_csv(url)
+        # Align to base schema
+        df_can.columns = df.columns
+        df_can['date_start'] = pd.to_datetime(df_can['date_start'])
+        df_can['date_end'] = pd.to_datetime(df_can['date_end'])
+        df_can = df_can.drop_duplicates()
+        df = pd.concat([df, df_can], axis=0)
+        print(f"  ✓ Added candidate month {i} (v{major}_0_{i})")
+    except Exception as e:
+        print(f"  Note: Could not load {url}: {e}")
 
-print('\nFetching latest candidate data (version 26.0.1)...')
-try:
-    df_candidate = fetch_ucdp_api('26.0.1')
-    print(f'  Candidate data: {len(df_candidate)} events')
+# Normalize country names to standard set used downstream
+country_name_mapping = {
+    'DR Congo (Zaire)': 'Dem. Rep. Congo',
+    'Myanmar (Burma)': 'Myanmar',
+    'Russia (Soviet Union)': 'Russia',
+    'South Sudan': 'S. Sudan',
+    'Central African Republic': 'Central African Rep.',
+    'Ivory Coast': 'Côte d\'Ivoire',
+    'Kingdom of eSwatini (Swaziland)': 'eSwatini',
+    'Dominican Republic': 'Dominican Rep.',
+    'Macedonia, FYR': 'Macedonia',
+    'Madagascar (Malagasy)': 'Madagascar',
+    'North Macedonia': 'Macedonia',
+    'Serbia (Yugoslavia)': 'Serbia',
+    'Yemen (North Yemen)': 'Yemen',
+    'Zimbabwe (Rhodesia)': 'Zimbabwe',
+    'Vietnam (North Vietnam)': 'Vietnam'
+}
+if 'country' in df.columns:
+    df['country'] = df['country'].replace(country_name_mapping)
 
-    # Normalize country names between v25.1 and v26.0.1
-    # v26.0.1 uses different naming conventions that need to be standardized
-    country_name_mapping = {
-        'DR Congo (Zaire)': 'Dem. Rep. Congo',
-        'Myanmar (Burma)': 'Myanmar',
-        'Russia (Soviet Union)': 'Russia',
-        'South Sudan': 'S. Sudan'
-    }
-
-    # Ensure candidate data has same column structure as main dataset
-    if not df_candidate.empty:
-        # Apply country name normalization to candidate data
-        df_candidate['country'] = df_candidate['country'].replace(country_name_mapping)
-        print(f'  Applied country name normalization to candidate data')
-
-        # Combine datasets
-        df = pd.concat([df, df_candidate], axis=0)
-        df = df.drop_duplicates(subset=['id'], keep='last')
-        print(f'\nCombined dataset: {len(df)} unique events')
-except Exception as e:
-    print(f'Note: Could not load candidate data v26.0.1: {e}')
-    print('Using main dataset only (v25.1)')
-
-# Convert date columns to datetime
-df['date_start'] = pd.to_datetime(df['date_start'])
-df['date_end'] = pd.to_datetime(df['date_end'])
-
-print('\nProcessing data...')
+print('\nProcessing data…')
 df_tot = pd.DataFrame(columns=df.country.unique(),
                      index=pd.date_range(df.date_start.min(), df.date_end.max()))
 df_tot = df_tot.fillna(0)

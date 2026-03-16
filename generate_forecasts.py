@@ -229,9 +229,22 @@ def main():
         month = '13'
     # Use Candidate GED monthly CSVs matching the current GED major stream (e.g., 2026 -> v26_0_{i}.csv)
     major = int(datetime.now().strftime('%y'))  # 2026 -> 26
+    def _read_candidate_csv(url: str) -> pd.DataFrame:
+        for kwargs in (
+            {},
+            { 'sep': ';' },
+            { 'engine': 'python' },
+            { 'engine': 'python', 'sep': None },
+        ):
+            try:
+                return pd.read_csv(url, **kwargs)
+            except Exception:
+                continue
+        raise
+
     for i in range(1, int(month)):
         try:
-            df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{major}_0_{i}.csv')
+            df_can = _read_candidate_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{major}_0_{i}.csv')
             df_can.columns = df.columns
             df_can['date_start'] = pd.to_datetime(df_can['date_start'])
             df_can['date_end'] = pd.to_datetime(df_can['date_end'])
@@ -244,7 +257,7 @@ def main():
     prev_major = major - 1
     for i in range(1, 13):
         try:
-            df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{prev_major}_0_{i}.csv')
+            df_can = _read_candidate_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{prev_major}_0_{i}.csv')
             df_can.columns = df.columns
             df_can['date_start'] = pd.to_datetime(df_can['date_start'])
             df_can['date_end'] = pd.to_datetime(df_can['date_end'])

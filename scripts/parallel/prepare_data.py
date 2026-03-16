@@ -22,10 +22,24 @@ if month == '01':
     month = '13'
 major = int(datetime.now().strftime('%y'))  # 2026 -> 26
 print(f"Fetching Candidate GED monthly CSVs for v{major} (1..{int(month)-1})…")
+def _read_candidate_csv(url: str) -> pd.DataFrame:
+    """Robust CSV loader for UCDP candidate files with varying delimiters."""
+    for kwargs in (
+        {},
+        { 'sep': ';' },
+        { 'engine': 'python' },
+        { 'engine': 'python', 'sep': None },
+    ):
+        try:
+            return pd.read_csv(url, **kwargs)
+        except Exception:
+            continue
+    raise
+
 for i in range(1, int(month)):
     url = f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{major}_0_{i}.csv'
     try:
-        df_can = pd.read_csv(url)
+        df_can = _read_candidate_csv(url)
         # Align to base schema
         df_can.columns = df.columns
         df_can['date_start'] = pd.to_datetime(df_can['date_start'])
@@ -42,7 +56,7 @@ print(f"Backfilling Candidate GED monthly CSVs for v{prev_major} (1..12)…")
 for i in range(1, 13):
     url = f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{prev_major}_0_{i}.csv'
     try:
-        df_can = pd.read_csv(url)
+        df_can = _read_candidate_csv(url)
         df_can.columns = df.columns
         df_can['date_start'] = pd.to_datetime(df_can['date_start'])
         df_can['date_end'] = pd.to_datetime(df_can['date_end'])

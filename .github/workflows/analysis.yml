@@ -1,8 +1,6 @@
 name: analysis
 
 on:
-  schedule:
-    - cron: '0 0 25 * *'
   workflow_dispatch:
 
 jobs:

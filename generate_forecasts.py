@@ -10,6 +10,7 @@ from shape import Shape, finder
 import numpy as np
 import pickle
 from datetime import datetime, timedelta
+import os, sys
 import json
 import os
 
@@ -278,7 +279,23 @@ def main():
                     df_tot.loc[df_sub.date_start.iloc[j], i] + df_sub.best.iloc[j]
 
     df_tot_m = df_tot.resample('M').sum()
-    last_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+    # Support backfill via --asof YYYY-MM or env ASOF=YYYY-MM
+    asof = None
+    for i, a in enumerate(sys.argv):
+        if a.startswith('--asof'):
+            parts = a.split('=')
+            asof = parts[1] if len(parts) > 1 else (sys.argv[i+1] if i+1 < len(sys.argv) else None)
+            break
+    if not asof:
+        asof = os.environ.get('ASOF')
+    if asof:
+        try:
+            now_dt = datetime.strptime(asof + '-01', '%Y-%m-%d')
+        except Exception:
+            now_dt = datetime.now()
+    else:
+        now_dt = datetime.now()
+    last_month = now_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
     df_tot_m = df_tot_m.loc[:last_month, :]
     df_tot_m.to_csv('Conf.csv')
     del df

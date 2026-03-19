@@ -1,0 +1,91 @@
+name: Backfill Forecast Archive (sequential)
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "Start period (YYYY-MM)"
+        required: true
+        default: "2025-10"
+      end:
+        description: "End period (YYYY-MM) inclusive"
+        required: true
+        default: "2026-03"
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || true
+          pip install pandas numpy seaborn scikit-learn python-dateutil reportlab
+
+      - name: Build period list
+        id: periods
+        run: |
+          python - <<'PY'
+import sys
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+start='${{ inputs.start }}'
+end='${{ inputs.end }}'
+s=datetime.strptime(start+'-01','%Y-%m-%d')
+e=datetime.strptime(end+'-01','%Y-%m-%d')
+out=[]
+cur=s
+while cur<=e:
+    out.append(cur.strftime('%Y-%m'))
+    cur=cur+relativedelta(months=+1)
+print('\n'.join(out))
+PY
+          python - <<'PY' > periods.txt
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+start='${{ inputs.start }}'
+end='${{ inputs.end }}'
+s=datetime.strptime(start+'-01','%Y-%m-%d')
+e=datetime.strptime(end+'-01','%Y-%m-%d')
+out=[]
+cur=s
+while cur<=e:
+    out.append(cur.strftime('%Y-%m'))
+    cur=cur+relativedelta(months=+1)
+print('\n'.join(out))
+PY
+          echo "periods=$(paste -sd, periods.txt)" >> $GITHUB_OUTPUT
+
+      - name: Run backfill sequentially
+        env:
+          UCDP_API_TOKEN: ${{ secrets.UCDP_API_TOKEN }}
+        run: |
+          set -e
+          while read -r ym; do
+            echo "\n=== Backfilling period $ym ==="
+            ASOF="$ym" python generate_forecasts.py
+            python scripts/prepare_historical_predictions.py
+            git config user.name "github-actions"
+            git config user.email "github-actions@users.noreply.github.com"
+            git add Historical_Predictions/* || true
+            if ! git diff --cached --quiet; then
+              git commit -m "chore(archive): add $ym h6/h12 snapshots to Historical_Predictions"
+              git pull --rebase origin main || true
+              git push origin HEAD:main
+            else
+              echo "No changes for $ym"
+            fi
+          done < periods.txt
+

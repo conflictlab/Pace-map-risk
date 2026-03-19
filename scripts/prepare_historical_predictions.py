@@ -1,66 +1,60 @@
 #!/usr/bin/env python3
 """
-Prepare forecast outputs for Historical_Predictions directory
-Creates properly named CSV files for both h=6 and h=12 forecasts
-"""
+Prepare archived forecast CSVs under Historical_Predictions/ for each run.
 
-import pandas as pd
+Creates (if inputs exist):
+  - Historical_Predictions/YYYY-MM_h6.csv
+  - Historical_Predictions/YYYY-MM_h12.csv
+  - Historical_Predictions/latest_h6.csv (copy of forecasts_h6.csv)
+  - Historical_Predictions/latest_h12.csv (copy of forecasts_h12.csv)
+  - Historical_Predictions/Hist_latest.csv (copy of Hist.csv)
+
+Derives YYYY-MM from forecast_metadata.json (forecast_start_date), falling back to data_end_date.
+Does not recompute forecasts — just copies/archives the files produced by the workflow.
+"""
 import json
-from datetime import datetime
-import os
+import shutil
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
 
 def main():
-    print("Preparing Historical_Predictions outputs...")
+    meta_path = ROOT / 'forecast_metadata.json'
+    if not meta_path.exists():
+        print('forecast_metadata.json not found; skipping archive prep')
+        return
+    meta = json.loads(meta_path.read_text())
+    period = meta.get('forecast_start_date') or meta.get('data_end_date')
+    if not period:
+        print('Missing forecast_start_date/data_end_date in metadata; skipping')
+        return
 
-    # Load metadata to get dates
-    with open('forecast_metadata.json', 'r') as f:
-        metadata = json.load(f)
+    out_dir = ROOT / 'Historical_Predictions'
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    run_date = datetime.fromisoformat(metadata['run_date'])
-    forecast_month = run_date.strftime('%Y-%m')
+    # Map of input files to archive names
+    pairs = [
+        (ROOT / 'forecasts_h6.csv', out_dir / f'{period}_h6.csv'),
+        (ROOT / 'forecasts_h12.csv', out_dir / f'{period}_h12.csv'),
+    ]
+    for src, dst in pairs:
+        if src.exists():
+            shutil.copyfile(src, dst)
+            print(f'Wrote {dst}')
+        else:
+            print(f'Skip missing {src.name}')
 
-    # Create Historical_Predictions directory if it doesn't exist
-    os.makedirs('Historical_Predictions', exist_ok=True)
-
-    # Load the forecasts
-    h6 = pd.read_csv('forecasts_h6.csv', index_col=0)
-    h12 = pd.read_csv('forecasts_h12.csv', index_col=0)
-
-    # Get the forecast period ranges
-    h6_start = metadata['forecast_start_date']
-    h6_end = metadata['h6_end_date']
-    h12_end = metadata['h12_end_date']
-
-    # Create filenames following the existing pattern
-    # Format: YYYY-MM_StartMonth-YYYY_to_EndMonth-YYYY.csv
-    h6_filename = f"Historical_Predictions/{forecast_month}_{h6_start}_to_{h6_end}_h6.csv"
-    h12_filename = f"Historical_Predictions/{forecast_month}_{h6_start}_to_{h12_end}_h12.csv"
-
-    # Save the individual h6 and h12 CSVs
-    h6.to_csv(h6_filename)
-    h12.to_csv(h12_filename)
-
-    print(f"✓ Created {h6_filename}")
-    print(f"✓ Created {h12_filename}")
-
-    # Create a COMBINED file for website compatibility
-    # Website sync expects a single CSV with date column + country columns
-    # Use h6 forecast (6-month) as the main output matching old format
-    combined_filename = f"Historical_Predictions/{forecast_month}.csv"
-    h6.to_csv(combined_filename)
-    print(f"✓ Created {combined_filename} (combined format for website)")
-
-    # Also create a "latest" symlink or copy for easy access
-    h6.to_csv('Historical_Predictions/latest_h6.csv')
-    h12.to_csv('Historical_Predictions/latest_h12.csv')
-    h6.to_csv('Historical_Predictions/latest.csv')
-
-    # Copy historical data
-    hist = pd.read_csv('Hist.csv', index_col=0)
-    hist.to_csv('Historical_Predictions/Hist_latest.csv')
-
-    print(f"✓ Created latest forecast files")
-    print(f"\nHistorical_Predictions directory ready for website sync")
+    # Also maintain latest copies for convenience
+    latest_pairs = [
+        (ROOT / 'forecasts_h6.csv', out_dir / 'latest_h6.csv'),
+        (ROOT / 'forecasts_h12.csv', out_dir / 'latest_h12.csv'),
+        (ROOT / 'Hist.csv', out_dir / 'Hist_latest.csv'),
+    ]
+    for src, dst in latest_pairs:
+        if src.exists():
+            shutil.copyfile(src, dst)
+            print(f'Wrote {dst}')
 
 if __name__ == '__main__':
     main()
+

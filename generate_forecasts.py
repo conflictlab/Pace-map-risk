@@ -297,20 +297,33 @@ def main():
     # Use extended training window (24 months instead of 10)
     h_train = 24
 
+    # Helper to attach YYYY-MM date column for horizons
+    def attach_dates(df, start_year_month: str, periods: int):
+        try:
+            start = pd.to_datetime(start_year_month + '-01')
+        except Exception:
+            start = last_month + pd.DateOffset(months=1)
+        dates = [(start + pd.DateOffset(months=i)).strftime('%Y-%m') for i in range(periods)]
+        out = df.copy()
+        # Insert as first column
+        out.insert(0, 'date', dates)
+        return out
+
     # Generate 6-month forecasts
     print("\n4. Generating 6-month forecasts...")
     results_h6 = generate_forecasts(df_tot_m, df_conf, h=6, h_train=h_train, output_suffix='_h6')
 
-    # Save 6-month outputs
-    results_h6['pred_df'].to_csv('forecasts_h6.csv')
-    results_h6['pred_df_min'].to_csv('forecasts_h6_min.csv')
-    results_h6['pred_df_max'].to_csv('forecasts_h6_max.csv')
+    # Save 6-month outputs (with explicit date column YYYY-MM)
+    forecast_start_str = (last_month + pd.DateOffset(months=1)).strftime('%Y-%m')
+    attach_dates(results_h6['pred_df'], forecast_start_str, 6).to_csv('forecasts_h6.csv', index=False)
+    attach_dates(results_h6['pred_df_min'], forecast_start_str, 6).to_csv('forecasts_h6_min.csv', index=False)
+    attach_dates(results_h6['pred_df_max'], forecast_start_str, 6).to_csv('forecasts_h6_max.csv', index=False)
     results_h6['df_perc'].to_csv('perc_h6.csv')
 
-    # Save backward compatible filenames for h=6
-    results_h6['pred_df'].to_csv('Pred_df.csv')
-    results_h6['pred_df_min'].to_csv('Pred_df_min.csv')
-    results_h6['pred_df_max'].to_csv('Pred_df_max.csv')
+    # Save backward compatible filenames for h=6 (also include date column)
+    attach_dates(results_h6['pred_df'], forecast_start_str, 6).to_csv('Pred_df.csv', index=False)
+    attach_dates(results_h6['pred_df_min'], forecast_start_str, 6).to_csv('Pred_df_min.csv', index=False)
+    attach_dates(results_h6['pred_df_max'], forecast_start_str, 6).to_csv('Pred_df_max.csv', index=False)
     results_h6['df_perc'].to_csv('perc.csv')
     results_h6['df_next'][0].to_csv('dec.csv')
     results_h6['df_next'][1].to_csv('sta.csv')
@@ -329,10 +342,10 @@ def main():
     print("\n5. Generating 12-month forecasts...")
     results_h12 = generate_forecasts(df_tot_m, df_conf, h=12, h_train=h_train, output_suffix='_h12')
 
-    # Save 12-month outputs
-    results_h12['pred_df'].to_csv('forecasts_h12.csv')
-    results_h12['pred_df_min'].to_csv('forecasts_h12_min.csv')
-    results_h12['pred_df_max'].to_csv('forecasts_h12_max.csv')
+    # Save 12-month outputs (with explicit date column YYYY-MM)
+    attach_dates(results_h12['pred_df'], forecast_start_str, 12).to_csv('forecasts_h12.csv', index=False)
+    attach_dates(results_h12['pred_df_min'], forecast_start_str, 12).to_csv('forecasts_h12_min.csv', index=False)
+    attach_dates(results_h12['pred_df_max'], forecast_start_str, 12).to_csv('forecasts_h12_max.csv', index=False)
     results_h12['df_perc'].to_csv('perc_h12.csv')
     results_h12['df_next'][0].to_csv('dec_h12.csv')
     results_h12['df_next'][1].to_csv('sta_h12.csv')

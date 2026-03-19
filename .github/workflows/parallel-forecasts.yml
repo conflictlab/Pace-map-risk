@@ -210,31 +210,31 @@ jobs:
       - name: Add 'date' (YYYY-MM) column to forecast CSVs
         run: |
           python - <<'PY'
-import pandas as pd, json
-from datetime import datetime
-try:
-    with open('forecast_metadata.json') as f:
-        meta=json.load(f)
-    start=datetime.strptime((meta.get('forecast_start_date') or meta.get('data_end_date'))+'-01','%Y-%m-%d')
-except Exception as e:
-    start=datetime.utcnow().replace(day=1)
-def yyyymm_add(d,i):
-    y=d.year; m=d.month+i
-    y+= (m-1)//12; m=((m-1)%12)+1
-    return f"{y:04d}-{m:02d}"
-def ensure(fname):
-    try:
-        df=pd.read_csv(fname)
-    except Exception:
-        return
-    if len(df.columns)>0 and str(df.columns[0]).lower()=='date':
-        return
-    dates=[yyyymm_add(start,i) for i in range(len(df))]
-    df.insert(0,'date',dates)
-    df.to_csv(fname,index=False)
-for f in ['forecasts_h6.csv','forecasts_h6_min.csv','forecasts_h6_max.csv','forecasts_h12.csv','forecasts_h12_min.csv','forecasts_h12_max.csv','Pred_df.csv','Pred_df_min.csv','Pred_df_max.csv']:
-    ensure(f)
-PY
+          import pandas as pd, json
+          from datetime import datetime
+          try:
+              with open('forecast_metadata.json') as f:
+                  meta=json.load(f)
+              start=datetime.strptime((meta.get('forecast_start_date') or meta.get('data_end_date'))+'-01','%Y-%m-%d')
+          except Exception as e:
+              start=datetime.utcnow().replace(day=1)
+          def yyyymm_add(d,i):
+              y=d.year; m=d.month+i
+              y+= (m-1)//12; m=((m-1)%12)+1
+              return f"{y:04d}-{m:02d}"
+          def ensure(fname):
+              try:
+                  df=pd.read_csv(fname)
+              except Exception:
+                  return
+              if len(df.columns)>0 and str(df.columns[0]).lower()=='date':
+                  return
+              dates=[yyyymm_add(start,i) for i in range(len(df))]
+              df.insert(0,'date',dates)
+              df.to_csv(fname,index=False)
+          for f in ['forecasts_h6.csv','forecasts_h6_min.csv','forecasts_h6_max.csv','forecasts_h12.csv','forecasts_h12_min.csv','forecasts_h12_max.csv','Pred_df.csv','Pred_df_min.csv','Pred_df_max.csv']:
+              ensure(f)
+          PY
 
       - name: Organize outputs for Historical_Predictions
         run: python scripts/prepare_historical_predictions.py || echo "prepare_historical_predictions.py not found, skipping"

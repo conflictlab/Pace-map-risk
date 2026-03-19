@@ -1,0 +1,240 @@
+name: Backfill Month (parallel)
+
+on:
+  workflow_dispatch:
+    inputs:
+      asof:
+        description: "Compute forecasts as of YYYY-MM"
+        required: true
+        default: "2025-12"
+
+jobs:
+  prepare-data:
+    runs-on: ubuntu-latest
+    env:
+      ASOF: ${{ inputs.asof }}
+      UCDP_API_TOKEN: ${{ secrets.UCDP_API_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt || true
+          pip install seaborn scikit-learn
+
+      - name: Download and process UCDP data (as of ${{ inputs.asof }})
+        run: python scripts/parallel/prepare_data.py
+
+      - name: Upload processed data
+        uses: actions/upload-artifact@v4
+        with:
+          name: processed-data
+          path: |
+            Conf.csv
+            reg_coun.csv
+            shape.py
+            generate_forecasts.py
+          retention-days: 1
+
+  generate-h6:
+    needs: prepare-data
+    runs-on: ubuntu-latest
+    env:
+      ASOF: ${{ inputs.asof }}
+    strategy:
+      matrix:
+        chunk: [0, 1, 2, 3]
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt || true
+          pip install seaborn scikit-learn
+
+      - name: Download processed data
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data
+          path: ./
+
+      - name: Generate h=6 forecasts (chunk ${{ matrix.chunk }})
+        run: python scripts/parallel/generate_chunk.py 6 ${{ matrix.chunk }} 4
+        timeout-minutes: 90
+
+      - name: Upload h6 results
+        uses: actions/upload-artifact@v4
+        with:
+          name: h6-chunk-${{ matrix.chunk }}
+          path: |
+            forecasts_h6_chunk${{ matrix.chunk }}.csv
+            forecasts_h6_min_chunk${{ matrix.chunk }}.csv
+            forecasts_h6_max_chunk${{ matrix.chunk }}.csv
+            perc_h6_chunk${{ matrix.chunk }}.csv
+            dict_m_h6_chunk${{ matrix.chunk }}.pkl
+            dict_sce_h6_chunk${{ matrix.chunk }}.pkl
+            sce_dictionary_h6_chunk${{ matrix.chunk }}.pkl
+          retention-days: 1
+
+  generate-h12:
+    needs: prepare-data
+    runs-on: ubuntu-latest
+    env:
+      ASOF: ${{ inputs.asof }}
+    strategy:
+      matrix:
+        chunk: [0, 1, 2, 3]
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt || true
+          pip install seaborn scikit-learn
+
+      - name: Download processed data
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data
+          path: ./
+
+      - name: Generate h=12 forecasts (chunk ${{ matrix.chunk }})
+        run: python scripts/parallel/generate_chunk.py 12 ${{ matrix.chunk }} 4
+        timeout-minutes: 90
+
+      - name: Upload h12 results
+        uses: actions/upload-artifact@v4
+        with:
+          name: h12-chunk-${{ matrix.chunk }}
+          path: |
+            forecasts_h12_chunk${{ matrix.chunk }}.csv
+            forecasts_h12_min_chunk${{ matrix.chunk }}.csv
+            forecasts_h12_max_chunk${{ matrix.chunk }}.csv
+            perc_h12_chunk${{ matrix.chunk }}.csv
+            dict_sce_h12_chunk${{ matrix.chunk }}.pkl
+            sce_dictionary_h12_chunk${{ matrix.chunk }}.pkl
+          retention-days: 1
+
+  merge-and-archive:
+    needs: [generate-h6, generate-h12]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      ASOF: ${{ inputs.asof }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas==1.4.0 numpy==1.22.3 python-dateutil
+
+      - name: Download h6 chunks
+        uses: actions/download-artifact@v4
+        with:
+          pattern: h6-chunk-*
+          path: h6-chunks/
+          merge-multiple: true
+
+      - name: Download h12 chunks
+        uses: actions/download-artifact@v4
+        with:
+          pattern: h12-chunk-*
+          path: h12-chunks/
+          merge-multiple: true
+
+      - name: Download processed data
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data
+          path: data/
+
+      - name: Merge h=6 results
+        run: python scripts/parallel/merge_results.py 6 4
+
+      - name: Merge h=12 results
+        run: python scripts/parallel/merge_results.py 12 4
+
+      - name: Create Hist.csv and metadata
+        run: python scripts/parallel/create_metadata.py
+
+      - name: Add 'date' (YYYY-MM) column to forecast CSVs
+        run: |
+          python - <<'PY'
+          import pandas as pd, json
+          from datetime import datetime
+          try:
+              with open('forecast_metadata.json') as f:
+                  meta=json.load(f)
+              start=datetime.strptime((meta.get('forecast_start_date') or meta.get('data_end_date'))+'-01','%Y-%m-%d')
+          except Exception:
+              from datetime import datetime as dt
+              start=dt.utcnow().replace(day=1)
+          def yyyymm_add(d,i):
+              y=d.year; m=d.month+i
+              y+= (m-1)//12; m=((m-1)%12)+1
+              return f"{y:04d}-{m:02d}"
+          def ensure(fname):
+              try: df=pd.read_csv(fname)
+              except: return
+              if len(df.columns)>0 and str(df.columns[0]).lower()=='date': return
+              dates=[yyyymm_add(start,i) for i in range(len(df))]
+              df.insert(0,'date',dates)
+              df.to_csv(fname,index=False)
+          for f in ['forecasts_h6.csv','forecasts_h6_min.csv','forecasts_h6_max.csv','forecasts_h12.csv','forecasts_h12_min.csv','forecasts_h12_max.csv','Pred_df.csv','Pred_df_min.csv','Pred_df_max.csv']:
+              ensure(f)
+          PY
+
+      - name: Archive snapshots under Historical_Predictions
+        run: python scripts/prepare_historical_predictions.py
+
+      - name: Commit and push archive
+        run: |
+          set -e
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add Historical_Predictions/* || true
+          if git diff --cached --quiet; then
+            echo "No archived changes to commit"
+            exit 0
+          fi
+          git commit -m "chore(archive): add ${{ inputs.asof }} h6/h12 snapshots to Historical_Predictions (parallel backfill)"
+          git pull --rebase origin main || true
+          git push origin HEAD:main
+

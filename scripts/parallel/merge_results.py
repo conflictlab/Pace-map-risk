@@ -88,41 +88,44 @@ if horizon == 6:
 print(f'h={horizon} merge complete!')
 
 # Post-process: rescale normalized forecasts to historical units
+# DISABLED: Rescaling is inflating values - model already outputs in correct units
 # We apply scaling per country using the last 24 months of data from Conf.csv
-try:
-    import os
-    import pandas as pd
-    conf_path = os.path.join('data', 'Conf.csv')
-    if os.path.exists(conf_path):
-        conf = pd.read_csv(conf_path, index_col=0, parse_dates=True)
+# try:
+#     import os
+#     import pandas as pd
+#     conf_path = os.path.join('data', 'Conf.csv')
+#     if os.path.exists(conf_path):
+#         conf = pd.read_csv(conf_path, index_col=0, parse_dates=True)
+#
+#         def _rescale_file(path):
+#             if not os.path.exists(path):
+#                 return
+#             df = pd.read_csv(path, index_col=0)
+#             # Ensure we only scale columns present in Conf.csv
+#             common_cols = [c for c in df.columns if c in conf.columns]
+#             if not common_cols:
+#                 return
+#             scaled = df.copy()
+#             for col in common_cols:
+#                 # Use last 24 months where available; fall back to all if shorter
+#                 series = conf[col].dropna()
+#                 window = series.iloc[-24:] if len(series) >= 24 else series
+#                 a = window.max() - window.min()
+#                 b = window.min()
+#                 # Apply affine rescaling
+#                 scaled[col] = df[col] * a + b
+#             # Clamp negatives to zero
+#             scaled[scaled < 0] = 0
+#             scaled.to_csv(path)
+#
+#         # Apply to merged outputs for this horizon
+#         _rescale_file(f'forecasts_h{horizon}.csv')
+#         _rescale_file(f'forecasts_h{horizon}_min.csv')
+#         _rescale_file(f'forecasts_h{horizon}_max.csv')
+#         print(f'Rescaled forecasts_h{horizon}*.csv to historical units')
+#     else:
+#         print('Warning: data/Conf.csv not found; skipping rescaling')
+# except Exception as e:
+#     print(f'Warning: Failed to rescale forecasts: {e}')
 
-        def _rescale_file(path):
-            if not os.path.exists(path):
-                return
-            df = pd.read_csv(path, index_col=0)
-            # Ensure we only scale columns present in Conf.csv
-            common_cols = [c for c in df.columns if c in conf.columns]
-            if not common_cols:
-                return
-            scaled = df.copy()
-            for col in common_cols:
-                # Use last 24 months where available; fall back to all if shorter
-                series = conf[col].dropna()
-                window = series.iloc[-24:] if len(series) >= 24 else series
-                a = window.max() - window.min()
-                b = window.min()
-                # Apply affine rescaling
-                scaled[col] = df[col] * a + b
-            # Clamp negatives to zero
-            scaled[scaled < 0] = 0
-            scaled.to_csv(path)
-
-        # Apply to merged outputs for this horizon
-        _rescale_file(f'forecasts_h{horizon}.csv')
-        _rescale_file(f'forecasts_h{horizon}_min.csv')
-        _rescale_file(f'forecasts_h{horizon}_max.csv')
-        print(f'Rescaled forecasts_h{horizon}*.csv to historical units')
-    else:
-        print('Warning: data/Conf.csv not found; skipping rescaling')
-except Exception as e:
-    print(f'Warning: Failed to rescale forecasts: {e}')
+print('Rescaling disabled - model outputs are already in correct units')

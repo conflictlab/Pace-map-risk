@@ -120,7 +120,7 @@ jobs:
           retention-days: 1
 
   generate-h6:
-    needs: prepare-data
+    needs: [resolve-months, prepare-data]
     runs-on: ubuntu-latest
     env:
       ASOF: ${{ matrix.month }}
@@ -170,7 +170,7 @@ jobs:
           retention-days: 1
 
   generate-h12:
-    needs: prepare-data
+    needs: [resolve-months, prepare-data]
     runs-on: ubuntu-latest
     env:
       ASOF: ${{ matrix.month }}
@@ -219,7 +219,7 @@ jobs:
           retention-days: 1
 
   merge-and-archive:
-    needs: [generate-h6, generate-h12]
+    needs: [resolve-months, generate-h6, generate-h12]
     runs-on: ubuntu-latest
     concurrency:
       group: backfill-archive

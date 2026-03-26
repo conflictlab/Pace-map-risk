@@ -46,36 +46,36 @@ jobs:
           as='${{ inputs.asof }}'
           skip='${{ inputs.skipExistingH12 }}'
           inc_month() { y=${1%-*}; m=${1#*-}; m=$((10#$m+1)); y=$((10#$y + (m>12?1:0))); m=$(( (m-1)%12 + 1 )); printf '%04d-%02d' "$y" "$m"; }
-          months_json() {
-            first="$1"; last="$2"; cur="$first"; printf '['; sep=''; while :; do printf '%s"%s"' "$sep" "$cur"; sep=','; if [ "$cur" = "$last" ]; then break; fi; cur=$(inc_month "$cur"); done; printf ']'; }
+          build_range() { local a="$1"; local b="$2"; local cur="$a"; local out=(); while :; do out+=("$cur"); [ "$cur" = "$b" ] && break; cur=$(inc_month "$cur"); done; printf '%s\n' "${out[@]}"; }
+          # Build a space-separated list of months (no JSON yet)
+          list_ss=""
           if [ -n "$list" ]; then
-            # Normalize comma-list to JSON array
-            IFS=',' read -ra arr <<<"$list"; vals=(); for m in "${arr[@]}"; do m=$(echo "$m"|tr -d ' '); [ -n "$m" ] && vals+=("\"$m\""); done; months="[${vals[*]}]"
+            IFS=',' read -ra arr <<<"$list"; for m in "${arr[@]}"; do m=$(echo "$m"|tr -d ' '); [ -n "$m" ] && list_ss+=" $m"; done
           elif [ -n "$fm" ] && [ -n "$tm" ]; then
-            months=$(months_json "$fm" "$tm")
+            while read -r m; do list_ss+=" $m"; done < <(build_range "$fm" "$tm")
           elif [ -n "$as" ]; then
-            months='["'"$as"'"]'
+            list_ss=" $as"
           else
             echo "::warning::No months specified; defaulting to current month"
-            months='["'"$(date -u +%Y-%m)"'"]'
+            list_ss=" $(date -u +%Y-%m)"
           fi
           # Optionally filter out months that already have h12
-          if [ "$skip" = "true" ]; then
-            filtered='['
-            sep=''
-            for m in $(echo "$months" | jq -r '.[]'); do
-              # If any h12 file exists for this month, skip
-              if ls Historical_Predictions 2>/dev/null | grep -Eq "^${m}(_|\\.).*h12\\.csv$"; then
-                echo "Skipping $m (h12 exists)"
-                continue
-              fi
-              filtered+="$sep\"$m\""; sep=','
-            done
-            filtered+=']'
-            months="$filtered"
+          filtered_ss=""
+          for m in $list_ss; do
+            if [ "$skip" = "true" ] && ls Historical_Predictions 2>/dev/null | grep -Eq "^${m}(_|\\.).*h12\\.csv$"; then
+              echo "Skipping $m (h12 exists)"
+              continue
+            fi
+            filtered_ss+=" $m"
+          done
+          # Convert to JSON array; ensure non-empty JSON
+          if [ -z "$filtered_ss" ]; then
+            months_json='[]'
+          else
+            months_json='["'"$(echo "$filtered_ss" | sed -e 's/^ *//' -e 's/  */","/g')"'"]'
           fi
-          echo "Resolved months: $months"
-          echo "months=$months" >> "$GITHUB_OUTPUT"
+          echo "Resolved months: $months_json"
+          echo "months=$months_json" >> "$GITHUB_OUTPUT"
 
   prepare-data:
     needs: resolve-months

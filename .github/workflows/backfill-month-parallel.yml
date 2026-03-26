@@ -1,19 +1,92 @@
-name: Backfill Month (parallel)
+name: Backfill Month(s) (parallel)
 
 on:
   workflow_dispatch:
     inputs:
       asof:
-        description: "Compute forecasts as of YYYY-MM"
-        required: true
-        default: "2025-12"
+        description: "Single month (YYYY-MM). Ignored if range/list provided."
+        required: false
+        default: ""
+      fromMonth:
+        description: "Start month (YYYY-MM)"
+        required: false
+        default: ""
+      toMonth:
+        description: "End month (YYYY-MM)"
+        required: false
+        default: ""
+      months:
+        description: "Comma-separated months (YYYY-MM,YYYY-MM,...)"
+        required: false
+        default: ""
+      skipExistingH12:
+        description: "Skip months that already have h12 in Historical_Predictions"
+        required: false
+        type: boolean
+        default: true
 
 jobs:
+  resolve-months:
+    runs-on: ubuntu-latest
+    outputs:
+      months: ${{ steps.set.outputs.months }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: set
+        name: Resolve month list
+        shell: bash
+        run: |
+          set -euo pipefail
+          fm='${{ inputs.fromMonth }}'
+          tm='${{ inputs.toMonth }}'
+          list='${{ inputs.months }}'
+          as='${{ inputs.asof }}'
+          skip='${{ inputs.skipExistingH12 }}'
+          inc_month() { y=${1%-*}; m=${1#*-}; m=$((10#$m+1)); y=$((10#$y + (m>12?1:0))); m=$(( (m-1)%12 + 1 )); printf '%04d-%02d' "$y" "$m"; }
+          months_json() {
+            first="$1"; last="$2"; cur="$first"; printf '['; sep=''; while :; do printf '%s"%s"' "$sep" "$cur"; sep=','; if [ "$cur" = "$last" ]; then break; fi; cur=$(inc_month "$cur"); done; printf ']'; }
+          if [ -n "$list" ]; then
+            # Normalize comma-list to JSON array
+            IFS=',' read -ra arr <<<"$list"; vals=(); for m in "${arr[@]}"; do m=$(echo "$m"|tr -d ' '); [ -n "$m" ] && vals+=("\"$m\""); done; months="[${vals[*]}]"
+          elif [ -n "$fm" ] && [ -n "$tm" ]; then
+            months=$(months_json "$fm" "$tm")
+          elif [ -n "$as" ]; then
+            months='["'"$as"'"]'
+          else
+            echo "::warning::No months specified; defaulting to current month"
+            months='["'"$(date -u +%Y-%m)"'"]'
+          fi
+          # Optionally filter out months that already have h12
+          if [ "$skip" = "true" ]; then
+            filtered='['
+            sep=''
+            for m in $(echo "$months" | jq -r '.[]'); do
+              # If any h12 file exists for this month, skip
+              if ls Historical_Predictions 2>/dev/null | grep -Eq "^${m}(_|\\.).*h12\\.csv$"; then
+                echo "Skipping $m (h12 exists)"
+                continue
+              fi
+              filtered+="$sep\"$m\""; sep=','
+            done
+            filtered+=']'
+            months="$filtered"
+          fi
+          echo "Resolved months: $months"
+          echo "months=$months" >> "$GITHUB_OUTPUT"
+
   prepare-data:
+    needs: resolve-months
     runs-on: ubuntu-latest
     env:
-      ASOF: ${{ inputs.asof }}
+      ASOF: ${{ matrix.month }}
       UCDP_API_TOKEN: ${{ secrets.UCDP_API_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        month: ${{ fromJSON(needs.resolve-months.outputs.months) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,7 +111,7 @@ jobs:
       - name: Upload processed data
         uses: actions/upload-artifact@v4
         with:
-          name: processed-data
+          name: processed-data-${{ matrix.month }}
           path: |
             Conf.csv
             reg_coun.csv
@@ -50,9 +123,10 @@ jobs:
     needs: prepare-data
     runs-on: ubuntu-latest
     env:
-      ASOF: ${{ inputs.asof }}
+      ASOF: ${{ matrix.month }}
     strategy:
       matrix:
+        month: ${{ fromJSON(needs.resolve-months.outputs.months) }}
         chunk: [0, 1, 2, 3]
       fail-fast: false
     steps:
@@ -74,7 +148,7 @@ jobs:
       - name: Download processed data
         uses: actions/download-artifact@v4
         with:
-          name: processed-data
+          name: processed-data-${{ matrix.month }}
           path: ./
 
       - name: Generate h=6 forecasts (chunk ${{ matrix.chunk }})
@@ -84,7 +158,7 @@ jobs:
       - name: Upload h6 results
         uses: actions/upload-artifact@v4
         with:
-          name: h6-chunk-${{ matrix.chunk }}
+          name: h6-chunk-${{ matrix.month }}-${{ matrix.chunk }}
           path: |
             forecasts_h6_chunk${{ matrix.chunk }}.csv
             forecasts_h6_min_chunk${{ matrix.chunk }}.csv
@@ -99,9 +173,10 @@ jobs:
     needs: prepare-data
     runs-on: ubuntu-latest
     env:
-      ASOF: ${{ inputs.asof }}
+      ASOF: ${{ matrix.month }}
     strategy:
       matrix:
+        month: ${{ fromJSON(needs.resolve-months.outputs.months) }}
         chunk: [0, 1, 2, 3]
       fail-fast: false
     steps:
@@ -123,7 +198,7 @@ jobs:
       - name: Download processed data
         uses: actions/download-artifact@v4
         with:
-          name: processed-data
+          name: processed-data-${{ matrix.month }}
           path: ./
 
       - name: Generate h=12 forecasts (chunk ${{ matrix.chunk }})
@@ -133,7 +208,7 @@ jobs:
       - name: Upload h12 results
         uses: actions/upload-artifact@v4
         with:
-          name: h12-chunk-${{ matrix.chunk }}
+          name: h12-chunk-${{ matrix.month }}-${{ matrix.chunk }}
           path: |
             forecasts_h12_chunk${{ matrix.chunk }}.csv
             forecasts_h12_min_chunk${{ matrix.chunk }}.csv
@@ -147,12 +222,16 @@ jobs:
     needs: [generate-h6, generate-h12]
     runs-on: ubuntu-latest
     concurrency:
-      group: backfill-merge-archive
+      group: backfill-archive
       cancel-in-progress: false
     permissions:
       contents: write
     env:
-      ASOF: ${{ inputs.asof }}
+      ASOF: ${{ matrix.month }}
+    strategy:
+      fail-fast: false
+      matrix:
+        month: ${{ fromJSON(needs.resolve-months.outputs.months) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -171,21 +250,21 @@ jobs:
       - name: Download h6 chunks
         uses: actions/download-artifact@v4
         with:
-          pattern: h6-chunk-*
+          pattern: h6-chunk-${{ matrix.month }}-*
           path: h6-chunks/
           merge-multiple: true
 
       - name: Download h12 chunks
         uses: actions/download-artifact@v4
         with:
-          pattern: h12-chunk-*
+          pattern: h12-chunk-${{ matrix.month }}-*
           path: h12-chunks/
           merge-multiple: true
 
       - name: Download processed data
         uses: actions/download-artifact@v4
         with:
-          name: processed-data
+          name: processed-data-${{ matrix.month }}
           path: data/
 
       - name: Merge h=6 results
@@ -245,7 +324,7 @@ jobs:
             echo "No archived changes to commit"
             exit 0
           fi
-          git commit -m "chore(archive): add ${{ inputs.asof }} h6/h12 snapshots to Historical_Predictions (parallel backfill)"
+          git commit -m "chore(archive): add ${{ matrix.month }} h6/h12 snapshots to Historical_Predictions (parallel backfill)"
           # Try push; if rejected, rebase again and retry
           if ! git push origin HEAD:main; then
             git fetch origin main

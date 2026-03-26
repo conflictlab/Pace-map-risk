@@ -82,6 +82,29 @@ python generate_forecasts.py
 python scripts/prepare_historical_predictions.py
 ```
 
+### Backfilling Past Months (h6 + h12)
+
+To re-generate archived months (including h12) without altering the model, run the generator as-of each month and prepare outputs. A helper script is provided:
+
+```bash
+# Examples
+# 1) Specific list of months
+bash scripts/backfill_months.sh --months "2024-01,2024-02,2024-03"
+
+# 2) A range (inclusive)
+bash scripts/backfill_months.sh --from 2024-01 --to 2025-12 --skip-existing-h12
+
+# 3) Auto-detect months present without h12 and backfill them
+bash scripts/backfill_months.sh --auto-missing-h12
+```
+
+Notes:
+- The script uses `ASOF=YYYY-MM python generate_forecasts.py`, then runs `scripts/prepare_historical_predictions.py`.
+- It commits each month and pushes via a hardened git flow (autostash rebase).
+- Requires Python deps installed and `UCDP_API_TOKEN` in env if needed.
+
+GitHub Actions workflow dispatch is also available: `.github/workflows/backfill-archive.yml` with inputs `months`, `fromMonth`, `toMonth`, `skipExistingH12`, and `autoMissingH12`.
+
 ## Configuration
 
 ### Training Window

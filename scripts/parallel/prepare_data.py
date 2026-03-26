@@ -6,8 +6,16 @@ Download and prepare UCDP data for parallel forecast generation using public dow
 """
 import pandas as pd
 from datetime import datetime, timedelta
+import os
 
 print('Loading UCDP data from public downloads…')
+
+# Determine ASOF month (YYYY-MM) if provided
+ASOF = os.environ.get('ASOF')
+try:
+    NOW_DT = datetime.strptime(ASOF + '-01', '%Y-%m-%d') if ASOF else datetime.now()
+except Exception:
+    NOW_DT = datetime.now()
 
 # 1) Base GED dataset (v25.1 ZIP)
 df = pd.read_csv(
@@ -17,10 +25,10 @@ df = pd.read_csv(
 )
 
 # 2) Candidate GED monthly CSVs for current GED stream (e.g., 2026 -> v26)
-month = datetime.now().strftime('%m')
+month = NOW_DT.strftime('%m')
 if month == '01':
     month = '13'
-major = int(datetime.now().strftime('%y'))  # 2026 -> 26
+major = int(NOW_DT.strftime('%y'))  # 2026 -> 26
 print(f"Fetching Candidate GED monthly CSVs for v{major} (1..{int(month)-1})…")
 def _read_candidate_csv(url: str) -> pd.DataFrame:
     """Robust CSV loader for UCDP candidate files with varying delimiters."""
@@ -101,8 +109,8 @@ for i in df.country.unique():
 
 df_tot_m = df_tot.resample('M').sum()
 
-# Cut off at last complete month
-last_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+# Cut off at last complete month relative to ASOF or now
+last_month = NOW_DT.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
 df_tot_m = df_tot_m.loc[:last_month, :]
 
 # Save to CSV

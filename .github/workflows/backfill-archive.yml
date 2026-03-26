@@ -1,0 +1,62 @@
+name: Backfill Historical Predictions
+
+on:
+  workflow_dispatch:
+    inputs:
+      months:
+        description: "Comma-separated months (YYYY-MM,YYYY-MM,...)"
+        required: false
+        type: string
+      fromMonth:
+        description: "Start month (YYYY-MM)"
+        required: false
+        type: string
+      toMonth:
+        description: "End month (YYYY-MM)"
+        required: false
+        type: string
+      skipExistingH12:
+        description: "Skip months that already have h12"
+        required: false
+        default: true
+        type: boolean
+      autoMissingH12:
+        description: "Auto-detect months that lack h12 and backfill"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Backfill months
+        env:
+          UCDP_API_TOKEN: ${{ secrets.UCDP_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          args=( )
+          if [ -n "${{ inputs.months }}" ]; then args+=( --months "${{ inputs.months }}" ); fi
+          if [ -n "${{ inputs.fromMonth }}" ] && [ -n "${{ inputs.toMonth }}" ]; then args+=( --from "${{ inputs.fromMonth }}" --to "${{ inputs.toMonth }}" ); fi
+          if [ "${{ inputs.skipExistingH12 }}" = "true" ]; then args+=( --skip-existing-h12 ); fi
+          if [ "${{ inputs.autoMissingH12 }}" = "true" ]; then args+=( --auto-missing-h12 ); fi
+          bash scripts/backfill_months.sh "${args[@]}"
+

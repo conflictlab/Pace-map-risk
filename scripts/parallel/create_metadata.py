@@ -5,6 +5,7 @@ Create Hist.csv and metadata files
 import pandas as pd
 import json
 from datetime import datetime, timedelta
+import os
 
 def rename_countries(df):
     return df.rename(columns={
@@ -34,8 +35,13 @@ hist_full = rename_countries(df_tot_m)
 hist_full.to_csv('Hist.csv')
 print(f'Saved Hist.csv with {len(hist_full)} months of data')
 
-# Create metadata
-last_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+# Create metadata (respect ASOF if provided)
+ASOF = os.environ.get('ASOF')
+try:
+    NOW_DT = datetime.strptime(ASOF + '-01', '%Y-%m-%d') if ASOF else datetime.now()
+except Exception:
+    NOW_DT = datetime.now()
+last_month = NOW_DT.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
 metadata = {
     'run_date': datetime.now().isoformat(),
     'data_end_date': last_month.strftime('%Y-%m'),

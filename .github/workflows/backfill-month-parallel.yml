@@ -146,6 +146,9 @@ jobs:
   merge-and-archive:
     needs: [generate-h6, generate-h12]
     runs-on: ubuntu-latest
+    concurrency:
+      group: backfill-merge-archive
+      cancel-in-progress: false
     permissions:
       contents: write
     env:
@@ -229,12 +232,23 @@ jobs:
           set -e
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          git add Historical_Predictions/* || true
+          # First rebase on latest main to avoid non-fast-forward
+          git fetch origin main
+          if ! git pull --rebase origin main; then
+            echo "Rebase failed; attempting stash/pull sequence"
+            git stash --all || true
+            git pull --rebase origin main || true
+            git stash pop || true
+          fi
+          git add -A Historical_Predictions || true
           if git diff --cached --quiet; then
             echo "No archived changes to commit"
             exit 0
           fi
           git commit -m "chore(archive): add ${{ inputs.asof }} h6/h12 snapshots to Historical_Predictions (parallel backfill)"
-          git pull --rebase origin main || true
-          git push origin HEAD:main
-
+          # Try push; if rejected, rebase again and retry
+          if ! git push origin HEAD:main; then
+            git fetch origin main
+            git pull --rebase origin main || true
+            git push origin HEAD:main
+          fi

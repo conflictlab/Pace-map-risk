@@ -103,7 +103,7 @@ Notes:
 - It commits each month and pushes via a hardened git flow (autostash rebase).
 - Requires Python deps installed and `UCDP_API_TOKEN` in env if needed.
 
-GitHub Actions workflow dispatch is also available: `.github/workflows/backfill-archive.yml` with inputs `months`, `fromMonth`, `toMonth`, `skipExistingH12`, and `autoMissingH12`.
+GitHub Actions dispatch is also available for single months: `.github/workflows/backfill-month-parallel.yml` (input `asof=YYYY-MM`).
 
 ## Configuration
 

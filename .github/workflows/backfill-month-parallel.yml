@@ -308,26 +308,39 @@ jobs:
 
       - name: Commit and push archive
         run: |
-          set -e
-          git config user.name "github-actions"
+          set -euo pipefail
+          git config user.name  "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           TMPDIR="${RUNNER_TEMP:-/tmp}"
-          # Save current month's files to temp
-          cp -f Historical_Predictions/${{ matrix.month }}_h6.csv "$TMPDIR/h6_${{ matrix.month }}.csv" 2>/dev/null || true
-          cp -f Historical_Predictions/${{ matrix.month }}_h12.csv "$TMPDIR/h12_${{ matrix.month }}.csv" 2>/dev/null || true
-          # Reset repo to remote tip to avoid conflicts from local generated files
+          SRC_H6="Historical_Predictions/${{ matrix.month }}_h6.csv"
+          SRC_H12="Historical_Predictions/${{ matrix.month }}_h12.csv"
+          # Save current month's files to temp (if present)
+          [ -f "$SRC_H6" ]  && cp -f "$SRC_H6"  "$TMPDIR/h6_${{ matrix.month }}.csv"
+          [ -f "$SRC_H12" ] && cp -f "$SRC_H12" "$TMPDIR/h12_${{ matrix.month }}.csv"
+          # Prepare a clean worktree at origin/main to avoid any local conflicts
           git fetch origin main
-          git reset --hard origin/main
-          mkdir -p Historical_Predictions
-          # Restore month's files back into the tree
-          if [ -f "$TMPDIR/h6_${{ matrix.month }}.csv" ]; then cp "$TMPDIR/h6_${{ matrix.month }}.csv" "Historical_Predictions/${{ matrix.month }}_h6.csv"; fi
-          if [ -f "$TMPDIR/h12_${{ matrix.month }}.csv" ]; then cp "$TMPDIR/h12_${{ matrix.month }}.csv" "Historical_Predictions/${{ matrix.month }}_h12.csv"; fi
-          # Commit only the month's archive files
-          git add Historical_Predictions/${{ matrix.month }}_h6.csv 2>/dev/null || true
-          git add Historical_Predictions/${{ matrix.month }}_h12.csv 2>/dev/null || true
-          if git diff --cached --quiet; then
+          ARCH_DIR="${{ runner.temp }}/archive-worktree"
+          rm -rf "$ARCH_DIR" || true
+          git worktree add "$ARCH_DIR" origin/main
+          mkdir -p "$ARCH_DIR/Historical_Predictions"
+          # Restore files into clean worktree
+          changed=0
+          if [ -f "$TMPDIR/h6_${{ matrix.month }}.csv" ]; then
+            cp -f "$TMPDIR/h6_${{ matrix.month }}.csv" "$ARCH_DIR/Historical_Predictions/${{ matrix.month }}_h6.csv"; changed=1
+          fi
+          if [ -f "$TMPDIR/h12_${{ matrix.month }}.csv" ]; then
+            cp -f "$TMPDIR/h12_${{ matrix.month }}.csv" "$ARCH_DIR/Historical_Predictions/${{ matrix.month }}_h12.csv"; changed=1
+          fi
+          if [ "$changed" -eq 0 ]; then
             echo "No archived changes to commit for ${{ matrix.month }}"
+            git worktree remove "$ARCH_DIR" --force
             exit 0
           fi
-          git commit -m "chore(archive): add ${{ matrix.month }} h6/h12 snapshots to Historical_Predictions (parallel backfill)"
+          # Commit from the clean worktree
+          pushd "$ARCH_DIR" >/dev/null
+          git add Historical_Predictions/${{ matrix.month }}_h6.csv 2>/dev/null || true
+          git add Historical_Predictions/${{ matrix.month }}_h12.csv 2>/dev/null || true
+          git commit -m "chore(archive): add ${{ matrix.month }} h6/h12 snapshots to Historical_Predictions (parallel backfill)" || true
           git push origin HEAD:main
+          popd >/dev/null
+          git worktree remove "$ARCH_DIR" --force

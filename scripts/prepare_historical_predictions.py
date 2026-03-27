@@ -13,6 +13,7 @@ Derives YYYY-MM from forecast_metadata.json (forecast_start_date), falling back 
 Does not recompute forecasts — just copies/archives the files produced by the workflow.
 """
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -44,17 +45,18 @@ def main():
         else:
             print(f'Skip missing {src.name}')
 
-    # Also maintain latest copies for convenience
-    latest_pairs = [
-        (ROOT / 'forecasts_h6.csv', out_dir / 'latest_h6.csv'),
-        (ROOT / 'forecasts_h12.csv', out_dir / 'latest_h12.csv'),
-        (ROOT / 'Hist.csv', out_dir / 'Hist_latest.csv'),
-    ]
-    for src, dst in latest_pairs:
-        if src.exists():
-            shutil.copyfile(src, dst)
-            print(f'Wrote {dst}')
+    # Also maintain latest copies unless ARCHIVE_ONLY=true
+    archive_only = str(os.environ.get('ARCHIVE_ONLY', '')).lower() == 'true'
+    if not archive_only:
+        latest_pairs = [
+            (ROOT / 'forecasts_h6.csv', out_dir / 'latest_h6.csv'),
+            (ROOT / 'forecasts_h12.csv', out_dir / 'latest_h12.csv'),
+            (ROOT / 'Hist.csv', out_dir / 'Hist_latest.csv'),
+        ]
+        for src, dst in latest_pairs:
+            if src.exists():
+                shutil.copyfile(src, dst)
+                print(f'Wrote {dst}')
 
 if __name__ == '__main__':
     main()
-

@@ -145,11 +145,35 @@ jobs:
           pip install -r requirements.txt || true
           pip install seaborn scikit-learn
 
-      - name: Download processed data
+      - name: Download processed data (try 1)
+        id: dl_proc_h6_1
+        continue-on-error: true
+        timeout-minutes: 10
         uses: actions/download-artifact@v4
         with:
           name: processed-data-${{ matrix.month }}
           path: ./
+          github-token: ${{ github.token }}
+
+      - name: Download processed data (retry 2)
+        if: steps.dl_proc_h6_1.outcome == 'failure'
+        id: dl_proc_h6_2
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data-${{ matrix.month }}
+          path: ./
+          github-token: ${{ github.token }}
+
+      - name: Download processed data (retry 3)
+        if: steps.dl_proc_h6_1.outcome == 'failure' && steps.dl_proc_h6_2.outcome == 'failure'
+        timeout-minutes: 10
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data-${{ matrix.month }}
+          path: ./
+          github-token: ${{ github.token }}
 
       - name: Generate h=6 forecasts (chunk ${{ matrix.chunk }})
         run: python scripts/parallel/generate_chunk.py 6 ${{ matrix.chunk }} 4
@@ -195,11 +219,35 @@ jobs:
           pip install -r requirements.txt || true
           pip install seaborn scikit-learn
 
-      - name: Download processed data
+      - name: Download processed data (try 1)
+        id: dl_proc_h12_1
+        continue-on-error: true
+        timeout-minutes: 10
         uses: actions/download-artifact@v4
         with:
           name: processed-data-${{ matrix.month }}
           path: ./
+          github-token: ${{ github.token }}
+
+      - name: Download processed data (retry 2)
+        if: steps.dl_proc_h12_1.outcome == 'failure'
+        id: dl_proc_h12_2
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data-${{ matrix.month }}
+          path: ./
+          github-token: ${{ github.token }}
+
+      - name: Download processed data (retry 3)
+        if: steps.dl_proc_h12_1.outcome == 'failure' && steps.dl_proc_h12_2.outcome == 'failure'
+        timeout-minutes: 10
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data-${{ matrix.month }}
+          path: ./
+          github-token: ${{ github.token }}
 
       - name: Generate h=12 forecasts (chunk ${{ matrix.chunk }})
         run: python scripts/parallel/generate_chunk.py 12 ${{ matrix.chunk }} 4
@@ -245,25 +293,101 @@ jobs:
         run: |
           pip install pandas==1.4.0 numpy==1.22.3 python-dateutil
 
-      - name: Download h6 chunks
+      - name: Download h6 chunks (try 1)
+        id: dl_h6_1
+        continue-on-error: true
+        timeout-minutes: 10
         uses: actions/download-artifact@v4
         with:
           pattern: h6-chunk-${{ matrix.month }}-*
           path: h6-chunks/
           merge-multiple: true
+          github-token: ${{ github.token }}
 
-      - name: Download h12 chunks
+      - name: Download h6 chunks (retry 2)
+        if: steps.dl_h6_1.outcome == 'failure'
+        id: dl_h6_2
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/download-artifact@v4
+        with:
+          pattern: h6-chunk-${{ matrix.month }}-*
+          path: h6-chunks/
+          merge-multiple: true
+          github-token: ${{ github.token }}
+
+      - name: Download h6 chunks (retry 3)
+        if: steps.dl_h6_1.outcome == 'failure' && steps.dl_h6_2.outcome == 'failure'
+        timeout-minutes: 10
+        uses: actions/download-artifact@v4
+        with:
+          pattern: h6-chunk-${{ matrix.month }}-*
+          path: h6-chunks/
+          merge-multiple: true
+          github-token: ${{ github.token }}
+
+      - name: Download h12 chunks (try 1)
+        id: dl_h12_1
+        continue-on-error: true
+        timeout-minutes: 10
         uses: actions/download-artifact@v4
         with:
           pattern: h12-chunk-${{ matrix.month }}-*
           path: h12-chunks/
           merge-multiple: true
+          github-token: ${{ github.token }}
 
-      - name: Download processed data
+      - name: Download h12 chunks (retry 2)
+        if: steps.dl_h12_1.outcome == 'failure'
+        id: dl_h12_2
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/download-artifact@v4
+        with:
+          pattern: h12-chunk-${{ matrix.month }}-*
+          path: h12-chunks/
+          merge-multiple: true
+          github-token: ${{ github.token }}
+
+      - name: Download h12 chunks (retry 3)
+        if: steps.dl_h12_1.outcome == 'failure' && steps.dl_h12_2.outcome == 'failure'
+        timeout-minutes: 10
+        uses: actions/download-artifact@v4
+        with:
+          pattern: h12-chunk-${{ matrix.month }}-*
+          path: h12-chunks/
+          merge-multiple: true
+          github-token: ${{ github.token }}
+
+      - name: Download processed data (try 1)
+        id: dl_proc_merge_1
+        continue-on-error: true
+        timeout-minutes: 10
         uses: actions/download-artifact@v4
         with:
           name: processed-data-${{ matrix.month }}
           path: data/
+          github-token: ${{ github.token }}
+
+      - name: Download processed data (retry 2)
+        if: steps.dl_proc_merge_1.outcome == 'failure'
+        id: dl_proc_merge_2
+        continue-on-error: true
+        timeout-minutes: 10
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data-${{ matrix.month }}
+          path: data/
+          github-token: ${{ github.token }}
+
+      - name: Download processed data (retry 3)
+        if: steps.dl_proc_merge_1.outcome == 'failure' && steps.dl_proc_merge_2.outcome == 'failure'
+        timeout-minutes: 10
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data-${{ matrix.month }}
+          path: data/
+          github-token: ${{ github.token }}
 
       - name: Merge h=6 results
         run: python scripts/parallel/merge_results.py 6 4

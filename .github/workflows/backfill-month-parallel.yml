@@ -221,15 +221,13 @@ jobs:
   merge-and-archive:
     needs: [resolve-months, generate-h6, generate-h12]
     runs-on: ubuntu-latest
-    concurrency:
-      group: backfill-archive
-      cancel-in-progress: false
     permissions:
       contents: write
     env:
       ASOF: ${{ matrix.month }}
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         month: ${{ fromJSON(needs.resolve-months.outputs.months) }}
     steps:

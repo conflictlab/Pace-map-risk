@@ -7,6 +7,25 @@ Download and prepare UCDP data for parallel forecast generation using public dow
 import pandas as pd
 from datetime import datetime, timedelta
 import os
+import time
+import urllib.request
+import tempfile
+
+def http_download(url: str, suffix: str = '', timeout: int = 60, retries: int = 5, backoff_seconds: int = 5) -> str:
+    """Download a URL to a temporary file with retries and return the local path."""
+    last_err = None
+    for attempt in range(retries):
+        try:
+            fd, tmp_path = tempfile.mkstemp(suffix=suffix)
+            os.close(fd)
+            with urllib.request.urlopen(url, timeout=timeout) as r, open(tmp_path, 'wb') as f:
+                f.write(r.read())
+            return tmp_path
+        except Exception as e:
+            last_err = e
+            # Exponential-ish backoff
+            time.sleep(backoff_seconds * (attempt + 1))
+    raise last_err if last_err else RuntimeError(f"Failed to download: {url}")
 
 print('Loading UCDP data from public downloads…')
 
@@ -17,12 +36,10 @@ try:
 except Exception:
     NOW_DT = datetime.now()
 
-# 1) Base GED dataset (v25.1 ZIP)
-df = pd.read_csv(
-    'https://ucdp.uu.se/downloads/ged/ged251-csv.zip',
-    parse_dates=['date_start', 'date_end'],
-    low_memory=False
-)
+# 1) Base GED dataset (v25.1 ZIP) — fetch with retries to avoid transient timeouts
+base_url = 'https://ucdp.uu.se/downloads/ged/ged251-csv.zip'
+base_zip = http_download(base_url, suffix='.zip', timeout=90, retries=5, backoff_seconds=6)
+df = pd.read_csv(base_zip, parse_dates=['date_start', 'date_end'], low_memory=False)
 
 # 2) Candidate GED monthly CSVs for current GED stream (e.g., 2026 -> v26)
 month = NOW_DT.strftime('%m')
@@ -31,7 +48,8 @@ if month == '01':
 major = int(NOW_DT.strftime('%y'))  # 2026 -> 26
 print(f"Fetching Candidate GED monthly CSVs for v{major} (1..{int(month)-1})…")
 def _read_candidate_csv(url: str) -> pd.DataFrame:
-    """Robust CSV loader for UCDP candidate files with varying delimiters."""
+    """Robust CSV loader for UCDP candidate files with varying delimiters, with HTTP retries."""
+    local = http_download(url, suffix='.csv', timeout=60, retries=5, backoff_seconds=5)
     for kwargs in (
         {},
         { 'sep': ';' },
@@ -39,10 +57,11 @@ def _read_candidate_csv(url: str) -> pd.DataFrame:
         { 'engine': 'python', 'sep': None },
     ):
         try:
-            return pd.read_csv(url, **kwargs)
+            return pd.read_csv(local, **kwargs)
         except Exception:
             continue
-    raise
+    # If all variants fail, re-raise a clear error
+    raise RuntimeError(f"Unable to parse candidate CSV: {url}")
 
 for i in range(1, int(month)):
     url = f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{major}_0_{i}.csv'

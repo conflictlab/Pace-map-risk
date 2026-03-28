@@ -30,13 +30,37 @@ month = datetime.now().strftime("%m")
 
 if month=='01':
    month='13'
+
+# Use current year for candidate data (e.g., 2026 -> v26)
+major = int(datetime.now().strftime('%y'))  # 2026 -> 26
+print(f"Loading candidate GED data for v{major} (months 1-{int(month)-1})...")
+
 for i in range(1,int(month)):
-    df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v25_0_{i}.csv')
-    df_can.columns = df.columns
-    df_can['date_start'] = pd.to_datetime(df_can['date_start'])
-    df_can['date_end'] = pd.to_datetime(df_can['date_end'])
-    df_can = df_can.drop_duplicates()
-    df= pd.concat([df,df_can],axis=0)
+    try:
+        df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{major}_0_{i}.csv')
+        df_can.columns = df.columns
+        df_can['date_start'] = pd.to_datetime(df_can['date_start'])
+        df_can['date_end'] = pd.to_datetime(df_can['date_end'])
+        df_can = df_can.drop_duplicates()
+        df = pd.concat([df,df_can],axis=0)
+        print(f"  ✓ Loaded candidate month {i} (v{major}_0_{i})")
+    except Exception as e:
+        print(f"  ✗ Could not load v{major}_0_{i}.csv: {e}")
+
+# Backfill previous year's candidate data
+prev_major = major - 1
+print(f"Backfilling candidate GED data for v{prev_major} (months 1-12)...")
+for i in range(1, 13):
+    try:
+        df_can = pd.read_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{prev_major}_0_{i}.csv')
+        df_can.columns = df.columns
+        df_can['date_start'] = pd.to_datetime(df_can['date_start'])
+        df_can['date_end'] = pd.to_datetime(df_can['date_end'])
+        df_can = df_can.drop_duplicates()
+        df = pd.concat([df,df_can],axis=0)
+        print(f"  ✓ Loaded candidate month {i} (v{prev_major}_0_{i})")
+    except Exception as e:
+        print(f"  ✗ Could not load v{prev_major}_0_{i}.csv: {e}")
 
 df_tot = pd.DataFrame(columns=df.country.unique(),index=pd.date_range(df.date_start.min(),
                                           df.date_end.max()))
@@ -53,6 +77,16 @@ df_tot_m=df_tot.resample('M').sum()
 last_month = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
 df_tot_m= df_tot_m.loc[:last_month,:]
 df_tot_m.to_csv('Conf.csv')
+
+# Validate data freshness
+data_end = df_tot_m.index[-1]
+months_old = (datetime.now() - data_end).days / 30
+print(f"\nData validation:")
+print(f"  Data ends: {data_end.strftime('%Y-%m')}")
+print(f"  Age: ~{months_old:.1f} months old")
+if months_old > 3:
+    print(f"  ⚠️  WARNING: Data is {months_old:.1f} months old! Candidate GED files may be missing.")
+
 del df
 del df_tot
 #df_tot_m = pd.read_csv('Conf.csv',parse_dates=True,index_col=(0))

@@ -243,6 +243,7 @@ def main():
                 continue
         raise
 
+    current_year_loaded = 0
     for i in range(1, int(month)):
         try:
             df_can = _read_candidate_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{major}_0_{i}.csv')
@@ -251,11 +252,14 @@ def main():
             df_can['date_end'] = pd.to_datetime(df_can['date_end'])
             df_can = df_can.drop_duplicates()
             df = pd.concat([df, df_can], axis=0)
-        except:
-            print(f"   Note: Could not load candidate data for v{major}_0_{i}.csv")
+            current_year_loaded += 1
+            print(f"   ✓ Loaded v{major}_0_{i}.csv")
+        except Exception as e:
+            print(f"   ✗ Could not load v{major}_0_{i}.csv: {e}")
 
     # Backfill previous GED stream for the full prior year (e.g., 2025 -> v25_0_{1..12}.csv)
     prev_major = major - 1
+    prev_year_loaded = 0
     for i in range(1, 13):
         try:
             df_can = _read_candidate_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{prev_major}_0_{i}.csv')
@@ -264,8 +268,12 @@ def main():
             df_can['date_end'] = pd.to_datetime(df_can['date_end'])
             df_can = df_can.drop_duplicates()
             df = pd.concat([df, df_can], axis=0)
-        except:
-            print(f"   Note: Could not load candidate data for v{prev_major}_0_{i}.csv")
+            prev_year_loaded += 1
+            print(f"   ✓ Loaded v{prev_major}_0_{i}.csv")
+        except Exception as e:
+            print(f"   ✗ Could not load v{prev_major}_0_{i}.csv: {e}")
+
+    print(f"\n   Summary: Loaded {current_year_loaded}/{int(month)-1} files for {major+2000}, {prev_year_loaded}/12 for {prev_major+2000}")
 
     print("2. Processing data...")
     df_tot = pd.DataFrame(columns=df.country.unique(),
@@ -305,8 +313,28 @@ def main():
     common_columns = df_tot_m.columns.intersection(df_conf.index)
     df_tot_m = df_tot_m.loc[:, common_columns]
 
+    # Validate data freshness
+    data_end = df_tot_m.index[-1]
+    expected_end = last_month
+    months_behind = ((expected_end.year - data_end.year) * 12 +
+                     (expected_end.month - data_end.month))
+
+    print(f"\n   Data validation:")
+    print(f"   - Data ends: {data_end.strftime('%Y-%m')}")
+    print(f"   - Expected: {expected_end.strftime('%Y-%m')}")
+
+    if months_behind > 2:
+        error_msg = f"ERROR: Historical data is {months_behind} months behind! Expected {expected_end.strftime('%Y-%m')}, got {data_end.strftime('%Y-%m')}"
+        print(f"   ⚠️  {error_msg}")
+        print(f"   This likely means candidate GED downloads failed.")
+        raise ValueError(error_msg)
+    elif months_behind > 0:
+        print(f"   ⚠️  WARNING: Data is {months_behind} month(s) behind")
+    else:
+        print(f"   ✓ Data is current")
+
     # Save full historical data
-    print("3. Saving historical data...")
+    print("\n3. Saving historical data...")
     hist_full = rename_countries(df_tot_m)
     hist_full.to_csv('Hist.csv')
     print(f"   Saved Hist.csv with {len(hist_full)} months of data")

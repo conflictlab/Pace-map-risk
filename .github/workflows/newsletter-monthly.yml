@@ -34,7 +34,20 @@ jobs:
             pip install -r requirements_pdf.txt
           else
             # Fix numpy/pandas compatibility issue by installing compatible versions
-            pip install 'pandas>=1.4.0,<2.0.0' reportlab weasyprint geopandas || true
+            pip install 'pandas>=1.4.0,<2.0.0' reportlab weasyprint geopandas matplotlib seaborn || true
+          fi
+
+      - name: Regenerate newsletter images
+        run: |
+          echo "Running test.py to regenerate fresh images with current data..."
+          if [ -f test.py ]; then
+            python test.py || {
+              echo "⚠️  WARNING: test.py failed, newsletter will use old images"
+              exit 0
+            }
+            echo "✓ Images regenerated successfully"
+          else
+            echo "⚠️  WARNING: test.py not found, newsletter will use existing images"
           fi
 
       - name: Build newsletter PDF

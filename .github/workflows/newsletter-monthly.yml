@@ -50,6 +50,12 @@ jobs:
             echo "⚠️  WARNING: test.py not found, newsletter will use existing images"
           fi
 
+      - name: Generate best.from_site.csv from forecasts
+        run: |
+          if [ -f scripts/generate_best_from_forecasts.py ]; then
+            python scripts/generate_best_from_forecasts.py
+          fi
+
       - name: Build newsletter PDF
         run: |
           ts=$(date -u +"%B %Y")

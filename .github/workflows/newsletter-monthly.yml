@@ -37,17 +37,12 @@ jobs:
             pip install 'pandas>=1.4.0,<2.0.0' reportlab weasyprint geopandas matplotlib seaborn || true
           fi
 
-      - name: Regenerate newsletter images
+      - name: Build newsletter images from forecasts (aligned with dashboard)
         run: |
-          echo "Running test.py to regenerate fresh images with current data..."
-          if [ -f test.py ]; then
-            python test.py || {
-              echo "⚠️  WARNING: test.py failed, newsletter will use old images"
-              exit 0
-            }
-            echo "✓ Images regenerated successfully"
+          if [ -f scripts/newsletter_images_from_forecasts.py ]; then
+            python scripts/newsletter_images_from_forecasts.py
           else
-            echo "⚠️  WARNING: test.py not found, newsletter will use existing images"
+            echo "scripts/newsletter_images_from_forecasts.py not found" >&2; exit 1
           fi
 
       - name: Generate best.from_site.csv from forecasts

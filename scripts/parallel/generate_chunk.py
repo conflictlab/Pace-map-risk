@@ -7,7 +7,7 @@ import sys
 sys.path.insert(0, '.')
 import pandas as pd
 import pickle
-from generate_forecasts import generate_forecasts
+from generate_forecasts import generate_forecasts, RENAME_MAP, rename_countries
 
 if len(sys.argv) != 4:
     print("Usage: python generate_chunk.py <horizon> <chunk_id> <total_chunks>")
@@ -21,7 +21,17 @@ print(f"Generating h={horizon} forecasts for chunk {chunk_id}/{total_chunks}")
 
 # Load data
 df_tot_m = pd.read_csv('Conf.csv', index_col=0, parse_dates=True)
-df_conf = pd.read_csv('reg_coun.csv', index_col=0, squeeze=True)
+df_conf = pd.read_csv('reg_coun.csv', index_col=0)
+
+# Normalize names on both sides to avoid dropping countries like Russia
+try:
+    df_tot_m = rename_countries(df_tot_m)
+    if df_tot_m.columns.duplicated().any():
+        df_tot_m = df_tot_m.T.groupby(level=0).sum().T
+    df_conf = df_conf.rename(index=RENAME_MAP)
+except Exception:
+    pass
+
 common_columns = df_tot_m.columns.intersection(df_conf.index)
 df_tot_m = df_tot_m.loc[:, common_columns]
 

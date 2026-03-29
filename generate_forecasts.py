@@ -34,6 +34,12 @@ RENAME_MAP = {
     'Vietnam (North Vietnam)': 'Vietnam'
 }
 
+try:
+    _PD_MAJOR = int(str(pd.__version__).split('.')[0])
+except Exception:
+    _PD_MAJOR = 1
+MONTHLY_FREQ = 'ME' if _PD_MAJOR >= 3 else 'M'
+
 def rename_countries(df):
     """Apply standard country name mappings"""
     return df.rename(columns=RENAME_MAP)
@@ -91,7 +97,7 @@ def generate_forecasts(df_tot_m, df_conf, h=6, h_train=10, output_suffix=''):
             sce_ts.columns = pd.date_range(
                 start=df_tot_m.iloc[-h_train:, coun].index[-1] + pd.DateOffset(months=1),
                 periods=h,
-                freq='ME'
+                freq=MONTHLY_FREQ
             )
             dict_sce_plot[df_tot_m.columns[coun]][0] = find.sce
             dict_sce_plot[df_tot_m.columns[coun]][1] = sce_ts
@@ -117,7 +123,7 @@ def generate_forecasts(df_tot_m, df_conf, h=6, h_train=10, output_suffix=''):
                     norm.index = pd.date_range(
                         start=df_tot_m.iloc[-h_train:, coun].index[-1] + pd.DateOffset(months=1),
                         periods=h,
-                        freq='ME'
+                        freq=MONTHLY_FREQ
                     )
                     seq_f = pd.concat([df_tot_m.iloc[-h_train:, coun], norm], axis=0)
                     index_s = seq_f.index
@@ -140,7 +146,7 @@ def generate_forecasts(df_tot_m, df_conf, h=6, h_train=10, output_suffix=''):
                 norm.index = pd.date_range(
                     start=find.sequences[i][0].index[-1] + pd.DateOffset(months=1),
                     periods=h,
-                    freq='ME'
+                    freq=MONTHLY_FREQ
                 )
                 seq_f = pd.concat([find.sequences[i][0], norm], axis=0)
                 seq_f.name = find.sequences[i][0].name
@@ -288,7 +294,7 @@ def main():
                 df_tot.loc[df_sub.date_start.iloc[j], i] = \
                     df_tot.loc[df_sub.date_start.iloc[j], i] + df_sub.best.iloc[j]
 
-    df_tot_m = df_tot.resample('ME').sum()
+    df_tot_m = df_tot.resample(MONTHLY_FREQ).sum()
     # Support backfill via --asof YYYY-MM or env ASOF=YYYY-MM
     asof = None
     for i, a in enumerate(sys.argv):

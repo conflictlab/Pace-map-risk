@@ -60,19 +60,7 @@ jobs:
             echo "PDF: $new"
           else
             # Fallback placeholder
-            python - <<'PY'
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from datetime import datetime
-ts = datetime.utcnow().strftime('%B %Y')
-fn = f'Newsletter_{ts}.pdf'
-c = canvas.Canvas(fn,pagesize=letter)
-c.setFont('Helvetica',20)
-c.drawString(72,720,f'PaCE Newsletter - {ts}')
-c.setFont('Helvetica',12)
-c.drawString(72,690,'Placeholder PDF (pdf.py failed)')
-c.showPage(); c.save(); print(fn)
-PY
+            python -c "from reportlab.lib.pagesizes import letter; from reportlab.pdfgen import canvas; from datetime import datetime; ts=datetime.utcnow().strftime('%B %Y'); fn=f'Newsletter_{ts}.pdf'; c=canvas.Canvas(fn,pagesize=letter); c.setFont('Helvetica',20); c.drawString(72,720,f'PaCE Newsletter - {ts}'); c.setFont('Helvetica',12); c.drawString(72,690,'Placeholder PDF (pdf.py failed)'); c.showPage(); c.save(); print(fn)"
           fi
 
       - name: Commit newsletter artifacts
@@ -92,4 +80,3 @@ PY
             git commit -m "chore(newsletter): backfill ${{ inputs.period }}"
             git push
           fi
-

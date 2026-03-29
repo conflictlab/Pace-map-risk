@@ -14,27 +14,29 @@ import os, sys
 import json
 import os
 
+RENAME_MAP = {
+    'Bosnia-Herzegovina': 'Bosnia and Herz.',
+    'Cambodia (Kampuchea)': 'Cambodia',
+    'Central African Republic': 'Central African Rep.',
+    'DR Congo (Zaire)': 'Dem. Rep. Congo',
+    'Ivory Coast': 'Côte d\'Ivoire',
+    'Kingdom of eSwatini (Swaziland)': 'eSwatini',
+    'Dominican Republic': 'Dominican Rep.',
+    'Macedonia, FYR': 'Macedonia',
+    'Madagascar (Malagasy)': 'Madagascar',
+    'Myanmar (Burma)': 'Myanmar',
+    'North Macedonia': 'Macedonia',
+    'Russia (Soviet Union)': 'Russia',
+    'Serbia (Yugoslavia)': 'Serbia',
+    'South Sudan': 'S. Sudan',
+    'Yemen (North Yemen)': 'Yemen',
+    'Zimbabwe (Rhodesia)': 'Zimbabwe',
+    'Vietnam (North Vietnam)': 'Vietnam'
+}
+
 def rename_countries(df):
     """Apply standard country name mappings"""
-    return df.rename(columns={
-        'Bosnia-Herzegovina': 'Bosnia and Herz.',
-        'Cambodia (Kampuchea)': 'Cambodia',
-        'Central African Republic': 'Central African Rep.',
-        'DR Congo (Zaire)': 'Dem. Rep. Congo',
-        'Ivory Coast': 'Côte d\'Ivoire',
-        'Kingdom of eSwatini (Swaziland)': 'eSwatini',
-        'Dominican Republic': 'Dominican Rep.',
-        'Macedonia, FYR': 'Macedonia',
-        'Madagascar (Malagasy)': 'Madagascar',
-        'Myanmar (Burma)': 'Myanmar',
-        'North Macedonia': 'Macedonia',
-        'Russia (Soviet Union)': 'Russia',
-        'Serbia (Yugoslavia)': 'Serbia',
-        'South Sudan': 'S. Sudan',
-        'Yemen (North Yemen)': 'Yemen',
-        'Zimbabwe (Rhodesia)': 'Zimbabwe',
-        'Vietnam (North Vietnam)': 'Vietnam'
-    })
+    return df.rename(columns=RENAME_MAP)
 
 def generate_forecasts(df_tot_m, df_conf, h=6, h_train=10, output_suffix=''):
     """
@@ -310,6 +312,16 @@ def main():
     del df_tot
 
     df_conf = pd.read_csv('reg_coun.csv', index_col=0, squeeze=True)
+    # Normalize country names on both sides to avoid dropping countries like Russia
+    try:
+        # Rename historical columns (merging duplicates if any)
+        df_tot_m = rename_countries(df_tot_m)
+        if df_tot_m.columns.duplicated().any():
+            df_tot_m = df_tot_m.T.groupby(level=0).sum().T
+        # Rename config index
+        df_conf = df_conf.rename(index=RENAME_MAP)
+    except Exception:
+        pass
     common_columns = df_tot_m.columns.intersection(df_conf.index)
     df_tot_m = df_tot_m.loc[:, common_columns]
 

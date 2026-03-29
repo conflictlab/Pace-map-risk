@@ -78,3 +78,15 @@ Converts the newsletter or other outputs into PDF format using charts and countr
 | `dict_sce.pkl` | Simple Scenario-based sequences for top countries (structured data) (up-still-down) |
 | `world_plot.geojson` | GeoJSON world map with risk and population-adjusted predictions |
 | `Images/*.png` | Visual outputs: global risk map, charts, country-specific prediction trajectories |
+
+---
+
+## Keep Newsletter Aligned With Website
+
+To ensure the PDF newsletter highlights the same top-risk countries as the website dashboard:
+
+- Generate a site-derived top-4 list (from `content/forecasts/latest.json`):
+  - `node scripts/generate-newsletter-best.js` (writes `Pace-map-risk/best.from_site.csv`)
+- The PDF generator (`Pace-map-risk/pdf.py`) will prefer `best.from_site.csv` when present; otherwise it falls back to `best.csv`.
+
+This keeps the newsletter’s country selection consistent with the site’s latest published snapshot.

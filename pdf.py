@@ -161,7 +161,10 @@ c.setFillColor(subtitle_color)
 c.drawString(letter[0] - right_margin - c.stringWidth('Contact', "Poppins", 11), bottom_margin + 3.25*line_height, 'Contact')
 c.showPage()
 
-df_best = pd.read_csv('best.csv',index_col=0)
+import os
+# Prefer site-derived top-4 if present (keeps newsletter aligned with dashboard)
+best_path = 'best.from_site.csv' if os.path.exists('best.from_site.csv') else 'best.csv'
+df_best = pd.read_csv(best_path, index_col=0)
 
 first = df_best.iloc[-1][0]
 title_text = f'{first}'
@@ -435,4 +438,3 @@ c.linkURL(website_url, (letter[0] - right_margin - c.stringWidth(website_text, "
 c.save()
 
 output_pdf_path
-

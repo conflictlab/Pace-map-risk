@@ -236,6 +236,10 @@ jobs:
               ensure(f)
           PY
 
+      - name: Validate forecast coverage vs Hist.csv (last 12 months)
+        run: |
+          python scripts/validate_coverage.py
+
       - name: Organize outputs for Historical_Predictions
         run: python scripts/prepare_historical_predictions.py || echo "prepare_historical_predictions.py not found, skipping"
         timeout-minutes: 10

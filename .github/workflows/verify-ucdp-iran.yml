@@ -1,0 +1,40 @@
+name: Verify UCDP Sum (Iran 2026-01)
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: Year (YYYY)
+        required: true
+        default: '2026'
+      month:
+        description: Month (MM)
+        required: true
+        default: '01'
+      country:
+        description: Country name
+        required: true
+        default: 'Iran'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install pandas
+        run: pip install pandas
+
+      - name: Run verification
+        run: |
+          python scripts/verify_ucdp_sum.py \
+            --year ${{ inputs.year }} \
+            --month ${{ inputs.month }} \
+            --country "${{ inputs.country }}"
+

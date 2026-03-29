@@ -5,12 +5,10 @@ Created on Mon Jul 24 17:52:04 2023
 @author: Thomas Schincariol
 """
 
-import tkinter as tk
-import pandas as pd
-import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+import pandas as pd
+import matplotlib.pyplot as plt
 from matplotlib.widgets import Cursor, Button
 import numpy as np
 from dtaidistance import dtw,ed
@@ -76,6 +74,12 @@ class Shape():
             The Save button stores the drawn shape data in self.time and self.values.
             The Quit button closes the graphical interface.
         """
+        # Lazy import tkinter and TkAgg backend to avoid dependency in headless runs
+        try:
+            import tkinter as tk  # type: ignore
+            from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk  # type: ignore
+        except Exception as e:
+            raise RuntimeError("tkinter/TkAgg not available in this environment") from e
         root = tk.Tk()
         root.title("Please draw the wanted Shape")
 
@@ -244,7 +248,12 @@ class finder():
         # Normalize each column (time series)
         seq_n = []
         for i in seq:
-            seq_n.append((i - i.mean()) / i.std())
+            std = float(i.std())
+            if std and std != 0.0:
+                seq_n.append((i - i.mean()) / std)
+            else:
+                # Degenerate (constant) series — avoid divide by zero
+                seq_n.append(pd.Series([0.0] * len(i), index=i.index))
     
         # Get exclude list, intervals, and a testing sequence for pattern matching
         exclude, interv, n_test = int_exc(seq, self.Shape.window)
@@ -266,8 +275,9 @@ class finder():
                 # Check if the current index is not in the exclude list
                 if i not in exclude:
                     seq2 = n_test[i:i + self.Shape.window]
-                    if seq2.var() != 0.0:
-                        seq2 = (seq2 - seq2.min()) / (seq2.max() - seq2.min())
+                    if getattr(seq2, 'var', None) is not None and seq2.var() != 0.0:
+                        denom = (seq2.max() - seq2.min())
+                        seq2 = (seq2 - seq2.min()) / denom if denom != 0 else np.array([0.5]*len(seq2))
                     else:
                         seq2 = np.array([0.5]*len(seq2))
                     try:
@@ -290,8 +300,9 @@ class finder():
                     # Check if the current index is not in the exclude list
                     if i not in exclude:
                         seq2 = n_test[i:i + int(self.Shape.window + lop)]
-                        if seq2.var() != 0.0:
-                            seq2 = (seq2 - seq2.min()) / (seq2.max() - seq2.min())
+                        if getattr(seq2, 'var', None) is not None and seq2.var() != 0.0:
+                            denom = (seq2.max() - seq2.min())
+                            seq2 = (seq2 - seq2.min()) / denom if denom != 0 else np.array([0.5]*len(seq2))
                         else:
                             seq2 = np.array([0.5]*len(seq2))
                         try:
@@ -596,7 +607,12 @@ class finder():
                 seq=self.data.iloc[date+1:date+1+horizon,self.data.columns.get_loc(col)].reset_index(drop=True)
                 seq = (seq - mi) / (ma - mi)
                 pred_seq.append(seq.tolist())
-                co.append(df_conf[col])
+                try:
+                    # df_conf is a DataFrame indexed by country; extract region label
+                    co.append(df_conf.loc[col].iloc[0] if hasattr(df_conf, 'loc') else df_conf[col])
+                except Exception:
+                    # Fallback: store country name if region lookup fails
+                    co.append(col)
                 deca.append(last_date.year)
                 scale.append(somme)
         tot_seq=pd.DataFrame(pred_seq)
@@ -983,7 +999,3 @@ class finder_multi():
         
             # Return the DataFrame with mean, lower bound, and upper bound of the prediction
         return pd.DataFrame([mean_f, mean_f - std_f, mean_f + std_f], index=['Prediction', 'CI lower', 'CI upper']).T
-
-
-
-

@@ -91,7 +91,7 @@ def generate_forecasts(df_tot_m, df_conf, h=6, h_train=10, output_suffix=''):
             sce_ts.columns = pd.date_range(
                 start=df_tot_m.iloc[-h_train:, coun].index[-1] + pd.DateOffset(months=1),
                 periods=h,
-                freq='M'
+                freq='ME'
             )
             dict_sce_plot[df_tot_m.columns[coun]][0] = find.sce
             dict_sce_plot[df_tot_m.columns[coun]][1] = sce_ts
@@ -117,7 +117,7 @@ def generate_forecasts(df_tot_m, df_conf, h=6, h_train=10, output_suffix=''):
                     norm.index = pd.date_range(
                         start=df_tot_m.iloc[-h_train:, coun].index[-1] + pd.DateOffset(months=1),
                         periods=h,
-                        freq='M'
+                        freq='ME'
                     )
                     seq_f = pd.concat([df_tot_m.iloc[-h_train:, coun], norm], axis=0)
                     index_s = seq_f.index
@@ -140,7 +140,7 @@ def generate_forecasts(df_tot_m, df_conf, h=6, h_train=10, output_suffix=''):
                 norm.index = pd.date_range(
                     start=find.sequences[i][0].index[-1] + pd.DateOffset(months=1),
                     periods=h,
-                    freq='M'
+                    freq='ME'
                 )
                 seq_f = pd.concat([find.sequences[i][0], norm], axis=0)
                 seq_f.name = find.sequences[i][0].name
@@ -288,7 +288,7 @@ def main():
                 df_tot.loc[df_sub.date_start.iloc[j], i] = \
                     df_tot.loc[df_sub.date_start.iloc[j], i] + df_sub.best.iloc[j]
 
-    df_tot_m = df_tot.resample('M').sum()
+    df_tot_m = df_tot.resample('ME').sum()
     # Support backfill via --asof YYYY-MM or env ASOF=YYYY-MM
     asof = None
     for i, a in enumerate(sys.argv):
@@ -311,7 +311,7 @@ def main():
     del df
     del df_tot
 
-    df_conf = pd.read_csv('reg_coun.csv', index_col=0, squeeze=True)
+    df_conf = pd.read_csv('reg_coun.csv', index_col=0)
     # Normalize country names on both sides to avoid dropping countries like Russia
     try:
         # Rename historical columns (merging duplicates if any)

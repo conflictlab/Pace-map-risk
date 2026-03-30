@@ -43,6 +43,9 @@ jobs:
 
       - name: Build newsletter images from forecasts (aligned with dashboard)
         run: |
+          # Try to fetch scenario/match pickles (optional)
+          curl -fsSL https://raw.githubusercontent.com/conflictlab/Pace-map-risk/main/sce_dictionary.pkl -o sce_dictionary.pkl || true
+          curl -fsSL https://raw.githubusercontent.com/conflictlab/Pace-map-risk/main/saved_dictionary.pkl -o saved_dictionary.pkl || true
           if [ -f scripts/newsletter_images_from_forecasts.py ]; then
             python scripts/newsletter_images_from_forecasts.py
           else

@@ -3,6 +3,7 @@ import os
 import math
 import pandas as pd
 import numpy as np
+import pickle
 try:
     import geopandas as gpd  # optional; fallback if unavailable
 except Exception:  # pragma: no cover
@@ -68,6 +69,23 @@ def load_hist():
     hist = hist.rename(columns={hist.columns[0]: 'date'})
     hist = hist.rename(columns=RENAME)
     return hist
+
+
+def load_pickles():
+    sce = None
+    matches = None
+    for fname, var in (( 'sce_dictionary.pkl', 'sce'), ('saved_dictionary.pkl','matches')):
+        if os.path.exists(fname):
+            try:
+                with open(fname, 'rb') as f:
+                    obj = pickle.load(f)
+                if fname.startswith('sce_'):
+                    sce = obj
+                else:
+                    matches = obj
+            except Exception:
+                pass
+    return sce, matches
 
 
 def setup_fonts():
@@ -139,9 +157,26 @@ def build_global_series(hist, f6):
     combined = pd.concat([hist_series, pd.Series(f6_sum.values, index=fdates)])
     fig = plt.figure(figsize=(25, 6))
     d = combined.index
-    plt.plot(d[:-len(f6_sum)], combined.iloc[:-len(f6_sum)], marker='o', color='grey', linestyle='-', linewidth=2, markersize=8)
-    plt.plot(d[-len(f6_sum):], combined.iloc[-len(f6_sum):], marker='o', color='red', linestyle='-', linewidth=2, markersize=8)
+    # Historical (black)
+    plt.plot(
+        d[:-len(f6_sum)], combined.iloc[:-len(f6_sum)],
+        marker='o', color='black', linestyle='-', linewidth=2, markersize=8
+    )
+    # Predicted (red)
+    plt.plot(
+        d[-len(f6_sum):], combined.iloc[-len(f6_sum):],
+        marker='o', color='red', linestyle='-', linewidth=2, markersize=8
+    )
     plt.scatter(d[-len(f6_sum):], combined.iloc[-len(f6_sum):], color='red', s=100, zorder=5)
+    # Connect last historical point to first forecast point with a black line
+    try:
+        last_hist_date = hist_series.index[-1]
+        first_fc_date = fdates[0]
+        last_hist_val = float(hist_series.iloc[-1])
+        first_fc_val = float(f6_sum.iloc[0])
+        plt.plot([last_hist_date, first_fc_date], [last_hist_val, first_fc_val], color='black', linewidth=2)
+    except Exception:
+        pass
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.xlabel('Date', fontsize=20); plt.xticks(fontsize=16, rotation=45, ha='right'); plt.yticks(fontsize=16)
     plt.box(False)
@@ -206,7 +241,7 @@ def barplots_by_country(value_sum, hist6):
     plt.savefig('Images/sub2_i.png', bbox_inches='tight'); plt.close(fig)
 
 
-def top4_details(hist, f6, f6_min, f6_max, top4):
+def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=None):
     # For each top-4 country, produce:
     #  - exN.png: last 10 months history
     #  - exN_sce.png: 6‑month forecasts (p50) with optional band between min/max
@@ -223,41 +258,100 @@ def top4_details(hist, f6, f6_min, f6_max, top4):
         ax.tick_params(axis='y', labelsize=25)
         ax.set_frame_on(False)
         plt.tight_layout(); plt.savefig(f'Images/ex{idx}.png', bbox_inches='tight'); plt.close(fig)
-        # exN_sce: forecasts
+        # exN_sce: scenarios/forecast
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-        # plot last 4 months history + forecast
+        # history (last 10 months)
         hx = hist[name].tail(10) if name in hist.columns else pd.Series([], dtype=float)
-        ax.plot(range(len(hx)), hx.values, color='gray', linestyle='-', linewidth=2, marker='o')
-        # forecast values from f6 rows 0..5
+        ax.plot(range(len(hx)), hx.values, color='black', linestyle='-', linewidth=2, marker='o')
+        # Try scenario dictionary first
+        plotted = False
         try:
-            p50 = f6[name].values
-            x0 = len(hx) - 1
-            xs = list(range(x0, x0 + len(p50)))
-            ax.plot(xs, [hx.values[-1]] + [], color='gray', alpha=0.0)  # anchor
-            # Plot forecast line continuing from last point
-            base = [hx.values[-1]] if len(hx) else []
-            y = pd.Series(base + list(p50)).rolling(window=1).sum().values  # simple join
-            ax.plot(range(len(y))[-len(p50):], p50, color='red', linestyle='-', linewidth=2, marker='o')
-            # bands
-            if f6_min is not None and f6_max is not None and name in f6_min.columns and name in f6_max.columns:
-                lo = f6_min[name].values; hi = f6_max[name].values
-                ax.fill_between(range(len(p50)), lo, hi, color='red', alpha=0.2)
+            if sce_dict and name in sce_dict:
+                scen_df = sce_dict[name][1] if isinstance(sce_dict[name], (list, tuple)) and len(sce_dict[name])>1 else None
+                if isinstance(scen_df, pd.DataFrame) and not scen_df.empty:
+                    # pick top 3 scenarios by index if index numeric (probability); else by row means
+                    try:
+                        order = list(pd.Series(scen_df.index).sort_values(ascending=False).index[:3])
+                        sel = scen_df.iloc[order, :]
+                    except Exception:
+                        sel = scen_df.iloc[:3, :]
+                    # rescale using recent history window
+                    if len(hx):
+                        hmin, hmax = float(hx.min()), float(hx.max())
+                        rng = (hmax - hmin) if (hmax - hmin) != 0 else 1.0
+                        rescaled = sel.apply(lambda s: s*(rng) + hmin)
+                    else:
+                        rescaled = sel.copy()
+                    # plot scenarios
+                    for i, (_, row) in enumerate(rescaled.iterrows()):
+                        xs = list(range(len(hx), len(hx) + len(row)))
+                        ax.plot(xs, row.values, linestyle='-', linewidth=2 if i==0 else 1.5, color='gray' if i>0 else '#df2226')
+                    plotted = True
         except Exception:
             pass
+        # Fallback: simple forecast band from f6_min/max
+        if not plotted:
+            try:
+                p50 = f6[name].values
+                xs = list(range(len(hx), len(hx) + len(p50)))
+                ax.plot(xs, p50, color='red', linestyle='-', linewidth=2, marker='o')
+                if f6_min is not None and f6_max is not None and name in f6_min.columns and name in f6_max.columns:
+                    lo = f6_min[name].values; hi = f6_max[name].values
+                    ax.fill_between(xs, lo, hi, color='red', alpha=0.2)
+            except Exception:
+                pass
+        # clean x ticks to avoid overlap
+        ax.set_xticks(list(range(len(hx), len(hx)+6)))
+        ax.set_xticklabels([f't+{i}' for i in range(1,7)])
         ax.set_frame_on(False); plt.tight_layout(); plt.savefig(f'Images/ex{idx}_sce.png', bbox_inches='tight'); plt.close(fig)
-        # exN_all: reuse history for now
-        try:
-            from PIL import Image
-            img = Image.open(f'Images/ex{idx}.png')
-            img.save(f'Images/ex{idx}_all.png')
-        except Exception:
-            pass
+
+        # exN_all: closest historical matches
+        drawn = False
+        if matches_dict and name in matches_dict:
+            try:
+                seqs = matches_dict[name]
+                # Expect list of [Series, distance]; pick up to 4 best
+                items = []
+                for it in seqs:
+                    if isinstance(it, (list, tuple)) and len(it)>=1 and hasattr(it[0],'values'):
+                        dist = float(it[1]) if (isinstance(it, (list, tuple)) and len(it)>1) else 0.0
+                        items.append((dist, it[0]))
+                items.sort(key=lambda x: x[0])
+                panel = items[:4]
+                if panel:
+                    fig, axes = plt.subplots(2, 2, figsize=(12, 6))
+                    axes = axes.flatten()
+                    for j, (dist, series) in enumerate(panel):
+                        axp = axes[j]
+                        try:
+                            axp.plot(series.index, series.values, color='#808080', linestyle='-', linewidth=2, marker='o')
+                            axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
+                        except Exception:
+                            axp.plot(range(len(series)), list(series), color='#808080', linestyle='-', linewidth=2, marker='o')
+                            axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
+                        axp.set_frame_on(False)
+                        axp.set_xticks([]); axp.set_yticks([])
+                    for j in range(len(panel),4):
+                        axes[j].axis('off')
+                    plt.tight_layout(); plt.savefig(f'Images/ex{idx}_all.png', bbox_inches='tight'); plt.close(fig)
+                    drawn = True
+            except Exception:
+                pass
+        if not drawn:
+            # default: copy history panel if no matches
+            try:
+                from PIL import Image
+                img = Image.open(f'Images/ex{idx}.png')
+                img.save(f'Images/ex{idx}_all.png')
+            except Exception:
+                pass
 
 
 def main():
     ensure_dirs(); setup_fonts()
     f6, f6_min, f6_max = load_forecasts()
     hist = load_hist()
+    sce, matches = load_pickles()
     # compute values
     # value_sum: sum of forecasts across 6 months per country
     f6_only = f6.iloc[:, 1:]
@@ -272,7 +366,7 @@ def main():
     barplots_by_country(value_sum, hist6)
     # Top-4 countries by forecasted next-6 months sum
     top4 = value_sum.sort_values(ascending=False).head(4).index.tolist()
-    top4_details(hist, f6, f6_min, f6_max, top4)
+    top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=sce, matches_dict=matches)
     print('Newsletter images built from forecasts_h6.csv')
 
 

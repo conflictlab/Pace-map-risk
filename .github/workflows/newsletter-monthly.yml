@@ -106,5 +106,12 @@ jobs:
             echo "No newsletter changes to commit"
           else
             git commit -m "chore(newsletter): publish $ts newsletter (PDF/HTML)"
-            git push
+            # Rebase on latest main to avoid non-fast-forward push failures
+            git fetch origin main
+            if ! git pull --rebase origin main; then
+              echo "Rebase failed; aborting rebase and skipping push to avoid conflicts." >&2
+              git rebase --abort || true
+              exit 1
+            fi
+            git push origin HEAD:main
           fi

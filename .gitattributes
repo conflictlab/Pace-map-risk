@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Always keep our version of newsletter PDFs during merges
+Newsletters/*.pdf merge=ours

@@ -99,25 +99,13 @@ def _load_scenarios_json(path='public/data/scenarios.json'):
         return {}
 
 def load_pickles():
-    dict_m_ren, dict_sce_plot_ren = {}, {}
-    try:
-        with open('saved_dictionary.pkl', 'rb') as f:
-            dict_m = pickle.load(f)
-        with open('sce_dictionary.pkl', 'rb') as f:
-            dict_sce_plot_f = pickle.load(f)
-        dict_m_ren = dict(dict_m)
-        for k, v in list(dict_m.items()):
-            rk = RENAME.get(k, k)
-            dict_m_ren[rk] = v
-        dict_sce_plot_ren = dict(dict_sce_plot_f)
-        for k, v in list(dict_sce_plot_f.items()):
-            rk = RENAME.get(k, k)
-            dict_sce_plot_ren[rk] = v
-    except Exception:
-        # Fallback to JSON artifacts to avoid pickle incompatibility on CI
-        dict_m_ren = _load_matches_json()
-        dict_sce_plot_ren = _load_scenarios_json()
-    return dict_m_ren, dict_sce_plot_ren
+    # Prefer JSON artifacts to avoid pickle incompatibility on CI
+    dict_m_ren = _load_matches_json()
+    dict_sce_plot_ren = _load_scenarios_json()
+    if dict_m_ren or dict_sce_plot_ren:
+        return dict_m_ren, dict_sce_plot_ren
+    # If JSON is missing, return empties; renderer will fallback to placeholders/p50
+    return {}, {}
 
 
 def resolve_top4():

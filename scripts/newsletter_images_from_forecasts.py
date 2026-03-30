@@ -3,7 +3,10 @@ import os
 import math
 import pandas as pd
 import numpy as np
-import geopandas as gpd
+try:
+    import geopandas as gpd  # optional; fallback if unavailable
+except Exception:  # pragma: no cover
+    gpd = None
 import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
@@ -78,31 +81,47 @@ def setup_fonts():
 
 
 def build_world_map(value_sum, hist_sum):
-    world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
-    # country name in world is 'name'
+    if gpd is not None:
+        try:
+            world = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
+            df = pd.DataFrame({'name': list(value_sum.index), 'value': list(value_sum.values)})
+            dfh = pd.DataFrame({'name': list(hist_sum.index), 'hist': list(hist_sum.values)})
+            w = world.merge(df, how='left', on='name').merge(dfh, how='left', on='name')
+            w = w[w.name != 'Antarctica']
+            w = w.fillna(0)
+            w.loc[w['value'] < 0, 'value'] = 0
+            w['log_per_pred'] = np.log10(w['value'] + 1)
+            fig, ax = plt.subplots(1, 1, figsize=(30, 15))
+            w.boundary.plot(ax=ax, color='black')
+            vmax = math.ceil(float(w['log_per_pred'].max())) if len(w) else 1
+            norm = mcolors.Normalize(vmin=0, vmax=vmax)
+            w.plot(column='log_per_pred', cmap='Reds', ax=ax, norm=norm)
+            plt.xlim(-180, 180)
+            plt.box(False)
+            ax.set_yticklabels([]); ax.set_yticks([]); ax.set_xticklabels([]); ax.set_xticks([])
+            cbar_ax = fig.add_axes([0.65, 0.15, 0.3, 0.02])
+            sm = ScalarMappable(cmap='Reds', norm=norm); sm.set_array([])
+            cbar = plt.colorbar(sm, cax=cbar_ax, orientation='horizontal')
+            cbar.set_ticks([*range(vmax + 1)])
+            cbar.set_ticklabels(['1'] + [f'$10^{e}$' for e in range(1, vmax + 1)], fontsize=20)
+            plt.text(1.9, 1.5, 'Risk index', fontsize=30)
+            plt.text(-8.5, 0.1, 'The risk index corresponds to the log sum of predicted fatalities in the next 6 months.', color='dimgray', fontdict={'style': 'italic', 'size': 20})
+            plt.savefig('Images/map.png', bbox_inches='tight')
+            plt.savefig('docs/Images/map.png', bbox_inches='tight')
+            plt.close(fig)
+            return
+        except Exception:
+            pass
+    # Fallback: produce a bar chart of top 20 countries by forecast sum
     df = pd.DataFrame({'name': list(value_sum.index), 'value': list(value_sum.values)})
-    dfh = pd.DataFrame({'name': list(hist_sum.index), 'hist': list(hist_sum.values)})
-    w = world.merge(df, how='left', on='name').merge(dfh, how='left', on='name')
-    w = w[w.name != 'Antarctica']
-    w = w.fillna(0)
-    w.loc[w['value'] < 0, 'value'] = 0
-    w['log_per_pred'] = np.log10(w['value'] + 1)
-
-    fig, ax = plt.subplots(1, 1, figsize=(30, 15))
-    w.boundary.plot(ax=ax, color='black')
-    vmax = math.ceil(float(w['log_per_pred'].max())) if len(w) else 1
-    norm = mcolors.Normalize(vmin=0, vmax=vmax)
-    w.plot(column='log_per_pred', cmap='Reds', ax=ax, norm=norm)
-    plt.xlim(-180, 180)
-    plt.box(False)
-    ax.set_yticklabels([]); ax.set_yticks([]); ax.set_xticklabels([]); ax.set_xticks([])
-    cbar_ax = fig.add_axes([0.65, 0.15, 0.3, 0.02])
-    sm = ScalarMappable(cmap='Reds', norm=norm); sm.set_array([])
-    cbar = plt.colorbar(sm, cax=cbar_ax, orientation='horizontal')
-    cbar.set_ticks([*range(vmax + 1)])
-    cbar.set_ticklabels(['1'] + [f'$10^{e}$' for e in range(1, vmax + 1)], fontsize=20)
-    plt.text(1.9, 1.5, 'Risk index', fontsize=30)
-    plt.text(-8.5, 0.1, 'The risk index corresponds to the log sum of predicted fatalities in the next 6 months.', color='dimgray', fontdict={'style': 'italic', 'size': 20})
+    top = df.sort_values('value', ascending=False).head(20).set_index('name').sort_values('value')
+    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+    sns.barplot(x=top.index, y='value', data=top, color='red', ax=ax)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+    ax.set_title('Top 20 predicted fatalities (6-month sum) — Fallback', fontsize=16)
+    for sp in ['top','right','left']: ax.spines[sp].set_visible(False)
+    ax.spines['bottom'].set_color('#DDDDDD')
+    plt.yscale('log'); ax.set_yticklabels([]); ax.set_yticks([])
     plt.savefig('Images/map.png', bbox_inches='tight')
     plt.savefig('docs/Images/map.png', bbox_inches='tight')
     plt.close(fig)
@@ -252,4 +271,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

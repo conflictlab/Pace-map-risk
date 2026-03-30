@@ -37,10 +37,9 @@ jobs:
             pip install 'pandas>=1.4.0,<2.0.0' reportlab weasyprint geopandas matplotlib seaborn || true
           fi
 
-      - name: Install image deps (matplotlib/geopandas/seaborn)
+      - name: Install image deps (matplotlib/seaborn)
         run: |
-          # Ensure plotting and geopandas deps are present even if requirements_pdf.txt was used
-          pip install 'pandas>=1.4.0,<2.0.0' geopandas matplotlib seaborn || true
+          pip install matplotlib seaborn
 
       - name: Build newsletter images from forecasts (aligned with dashboard)
         run: |

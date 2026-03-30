@@ -100,18 +100,19 @@ jobs:
           fi
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          # Commit both Newsletters/ and assets/ (which contains Report.pdf)
-          git add Newsletters/ assets/ *.html *.png || true
-          if git diff --cached --quiet; then
-            echo "No newsletter changes to commit"
-          else
+          # Stage all changes produced by this job to avoid unstaged files during rebase
+          git add -A
+          if ! git diff --cached --quiet; then
             git commit -m "chore(newsletter): publish $ts newsletter (PDF/HTML)"
-            # Rebase on latest main to avoid non-fast-forward push failures
-            git fetch origin main
-            if ! git pull --rebase origin main; then
-              echo "Rebase failed; aborting rebase and skipping push to avoid conflicts." >&2
-              git rebase --abort || true
-              exit 1
-            fi
-            git push origin HEAD:main
+          else
+            echo "No newsletter changes to commit"
           fi
+          # Rebase on latest main to avoid non-fast-forward push failures; autostash local mods
+          git fetch origin main
+          git config rebase.autoStash true
+          if ! git pull --rebase origin main; then
+            echo "Rebase failed; aborting rebase and skipping push to avoid conflicts." >&2
+            git rebase --abort || true
+            exit 1
+          fi
+          git push origin HEAD:main

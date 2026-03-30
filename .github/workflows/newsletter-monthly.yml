@@ -41,36 +41,6 @@ jobs:
         run: |
           pip install matplotlib seaborn dtaidistance scipy
 
-      - name: Wait for compute run (forecast_metadata fresh)
-        env:
-          REPO: conflictlab/Pace-map-risk
-        run: |
-          set -e
-          ATTEMPTS=18 # up to ~90 minutes
-          URL="https://raw.githubusercontent.com/${REPO}/main/forecast_metadata.json"
-          for i in $(seq 1 $ATTEMPTS); do
-            code=$(curl -s -o /tmp/forecast_meta.json -w '%{http_code}' "$URL" || true)
-            if [ "$code" = "200" ]; then
-              run_date=$(jq -r '.run_date // ""' /tmp/forecast_meta.json 2>/dev/null || echo "")
-              if [ -n "$run_date" ] && [ "$run_date" != "null" ]; then
-                clean_date=$(echo "$run_date" | sed 's/\.[0-9]*$//')
-                ts=$(date -d "$clean_date" +%s 2>/dev/null || echo "")
-                if [ -n "$ts" ]; then
-                  now=$(date -u +%s)
-                  age_min=$(( (now - ts) / 60 ))
-                else
-                  age_min=999999
-                fi
-              else
-                age_min=999999
-              fi
-            else
-              age_min=999999
-            fi
-            if [ "$age_min" -le 480 ]; then echo "Compute fresh (age ${age_min} min)."; break; fi
-            echo "Waiting for compute (attempt $i/$ATTEMPTS) — current age ${age_min} min"; sleep 300
-          done
-
       - name: Download compute artifacts (Hist, forecasts, pickles)
         env:
           REPO: conflictlab/Pace-map-risk

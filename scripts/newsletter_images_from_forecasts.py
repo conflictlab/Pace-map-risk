@@ -50,6 +50,9 @@ def ensure_dirs():
     os.makedirs('Images', exist_ok=True)
     os.makedirs('docs/Images', exist_ok=True)
 
+# High-DPI, opaque white saves so small panels remain readable in PDF
+SAVE_KW = dict(bbox_inches='tight', pad_inches=0.1, facecolor='white', dpi=220)
+
 
 def load_forecasts():
     f6 = pd.read_csv('forecasts_h6.csv')
@@ -119,6 +122,7 @@ def build_world_map(value_sum, hist_sum):
             w.loc[w['value'] < 0, 'value'] = 0
             w['log_per_pred'] = np.log10(w['value'] + 1)
             fig, ax = plt.subplots(1, 1, figsize=(30, 15))
+            fig.patch.set_facecolor('white'); ax.set_facecolor('white')
             w.boundary.plot(ax=ax, color='black')
             vmax = math.ceil(float(w['log_per_pred'].max())) if len(w) else 1
             norm = mcolors.Normalize(vmin=0, vmax=vmax)
@@ -133,8 +137,8 @@ def build_world_map(value_sum, hist_sum):
             cbar.set_ticklabels(['1'] + [f'$10^{e}$' for e in range(1, vmax + 1)], fontsize=20)
             plt.text(1.9, 1.5, 'Risk index', fontsize=30)
             plt.text(-8.5, 0.1, 'The risk index corresponds to the log sum of predicted fatalities in the next 6 months.', color='dimgray', fontdict={'style': 'italic', 'size': 20})
-            plt.savefig('Images/map.png', bbox_inches='tight')
-            plt.savefig('docs/Images/map.png', bbox_inches='tight')
+            plt.savefig('Images/map.png', **SAVE_KW)
+            plt.savefig('docs/Images/map.png', **SAVE_KW)
             plt.close(fig)
             return
         except Exception:
@@ -143,14 +147,15 @@ def build_world_map(value_sum, hist_sum):
     df = pd.DataFrame({'name': list(value_sum.index), 'value': list(value_sum.values)})
     top = df.sort_values('value', ascending=False).head(20).set_index('name').sort_values('value')
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+    fig.patch.set_facecolor('white'); ax.set_facecolor('white')
     sns.barplot(x=top.index, y='value', data=top, color='red', ax=ax)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
     ax.set_title('Top 20 predicted fatalities (6-month sum) — Fallback', fontsize=16)
     for sp in ['top','right','left']: ax.spines[sp].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD')
     plt.yscale('log'); ax.set_yticklabels([]); ax.set_yticks([])
-    plt.savefig('Images/map.png', bbox_inches='tight')
-    plt.savefig('docs/Images/map.png', bbox_inches='tight')
+    plt.savefig('Images/map.png', **SAVE_KW)
+    plt.savefig('docs/Images/map.png', **SAVE_KW)
     plt.close(fig)
 
 
@@ -165,6 +170,7 @@ def build_global_series(hist, f6):
     fdates = pd.date_range(start=last_date + pd.offsets.MonthEnd(1), periods=len(f6_sum), freq='M')
     combined = pd.concat([hist_series, pd.Series(f6_sum.values, index=fdates)])
     fig = plt.figure(figsize=(25, 6))
+    fig.patch.set_facecolor('white')
     d = combined.index
     # Historical (black)
     plt.plot(
@@ -189,8 +195,8 @@ def build_global_series(hist, f6):
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.xlabel('Date', fontsize=20); plt.xticks(fontsize=16, rotation=45, ha='right'); plt.yticks(fontsize=16)
     plt.box(False)
-    plt.savefig('Images/sub1_1.png', bbox_inches='tight')
-    plt.savefig('docs/Images/sub1_1.png', bbox_inches='tight')
+    plt.savefig('Images/sub1_1.png', **SAVE_KW)
+    plt.savefig('docs/Images/sub1_1.png', **SAVE_KW)
     plt.close(fig)
 
 
@@ -207,6 +213,7 @@ def barplots_by_country(value_sum, hist6):
     top10['color'] = np.where(top10['value'] > top10['hist'], 'red', 'black')
     top10['alpha'] = top10.apply(alpha_row, axis=1)
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    fig.patch.set_facecolor('white'); ax.set_facecolor('white')
     t10 = top10.reset_index(drop=True)
     sns.barplot(data=t10, x='name', y='value', hue='color', palette={'red':'red','black':'black'}, legend=False, ax=ax)
     # Ensure alpha per bar
@@ -216,7 +223,7 @@ def barplots_by_country(value_sum, hist6):
     for sp in ['top','right','left']: ax.spines[sp].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD'); ax.tick_params(bottom=False, left=False)
     plt.yscale('log'); ax.set_yticklabels([]); ax.set_yticks([])
-    plt.savefig('Images/sub2.png', bbox_inches='tight'); plt.close(fig)
+    plt.savefig('Images/sub2.png', **SAVE_KW); plt.close(fig)
 
     # sub2_d: largest decreases
     dec = df.nsmallest(10, 'diff').copy()
@@ -224,6 +231,7 @@ def barplots_by_country(value_sum, hist6):
     dec['color'] = np.where(dec['diff'] < 0, 'black', 'red')
     dec['alpha'] = dec.apply(alpha_row, axis=1)
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    fig.patch.set_facecolor('white'); ax.set_facecolor('white')
     dd = dec.sort_values('diff_abs').reset_index(drop=True)
     sns.barplot(data=dd, x='name', y='diff_abs', hue='color', palette={'red':'red','black':'black'}, legend=False, ax=ax)
     for patch, a in zip(ax.patches, dd['alpha'].tolist()):
@@ -232,13 +240,14 @@ def barplots_by_country(value_sum, hist6):
     for sp in ['top','right','left']: ax.spines[sp].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD'); ax.tick_params(bottom=False, left=False)
     plt.yscale('log'); ax.set_yticklabels([]); ax.set_yticks([])
-    plt.savefig('Images/sub2_d.png', bbox_inches='tight'); plt.close(fig)
+    plt.savefig('Images/sub2_d.png', **SAVE_KW); plt.close(fig)
 
     # sub2_i: largest increases
     inc = df.nlargest(10, 'diff').copy()
     inc['color'] = np.where(inc['diff'] > 0, 'red', 'black')
     inc['alpha'] = inc.apply(alpha_row, axis=1)
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    fig.patch.set_facecolor('white'); ax.set_facecolor('white')
     ii = inc.sort_values('diff').reset_index(drop=True)
     sns.barplot(data=ii, x='name', y='diff', hue='color', palette={'red':'red','black':'black'}, legend=False, ax=ax)
     for patch, a in zip(ax.patches, ii['alpha'].tolist()):
@@ -247,7 +256,7 @@ def barplots_by_country(value_sum, hist6):
     for sp in ['top','right','left']: ax.spines[sp].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD'); ax.tick_params(bottom=False, left=False)
     plt.yscale('log'); ax.set_yticklabels([]); ax.set_yticks([])
-    plt.savefig('Images/sub2_i.png', bbox_inches='tight'); plt.close(fig)
+    plt.savefig('Images/sub2_i.png', **SAVE_KW); plt.close(fig)
 
 
 def _compute_fallback_matches(hist_df: pd.DataFrame, name: str, h_train: int = 10, h: int = 6) -> List[Tuple[float, pd.Series]]:
@@ -309,23 +318,25 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
     for idx, name in enumerate(top4, start=1):
         # exN: history last 10 months
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+        fig.patch.set_facecolor('white'); ax.set_facecolor('white')
         if name in hist.columns:
             s = hist[name].tail(10)
-            ax.plot(s.index, s.values, marker='o', color='black', linestyle='-', linewidth=2, markersize=8)
+            ax.plot(s.index, s.values, marker='o', color='black', linestyle='-', linewidth=3, markersize=6)
         ax.grid(axis='y', linestyle='--', alpha=0.7)
         ax.tick_params(axis='x', labelsize=25)
         ax.tick_params(axis='y', labelsize=25)
         ax.set_frame_on(False)
-        plt.tight_layout(); plt.savefig(f'Images/ex{idx}.png', bbox_inches='tight'); plt.close(fig)
+        plt.tight_layout(); plt.savefig(f'Images/ex{idx}.png', **SAVE_KW); plt.close(fig)
         # Prepare name variants (renamed and original) for pickle lookups
         name_variants = [name]
         if name in RENAME_REV:
             name_variants.append(RENAME_REV[name])
         # exN_sce: scenarios/forecast
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+        fig.patch.set_facecolor('white'); ax.set_facecolor('white')
         # history (last 10 months)
         hx = hist[name].tail(10) if name in hist.columns else pd.Series([], dtype=float)
-        ax.plot(range(len(hx)), hx.values, color='black', linestyle='-', linewidth=2, marker='o')
+        ax.plot(range(len(hx)), hx.values, color='black', linestyle='-', linewidth=3, marker='o', markersize=6)
         # Try scenario dictionary first
         plotted = False
         try:
@@ -363,7 +374,7 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
                 # plot scenarios
                 for i, (_, row) in enumerate(rescaled.iterrows()):
                     xs = list(range(len(hx), len(hx) + len(row)))
-                    ax.plot(xs, row.values, linestyle='-', linewidth=2 if i==0 else 1.5, color='#df2226' if i==0 else 'gray')
+                    ax.plot(xs, row.values, linestyle='-', linewidth=3 if i==0 else 2, color='#df2226' if i==0 else '#888888', marker='o' if i==0 else None, markersize=5)
                 plotted = True
         except Exception:
             pass
@@ -372,7 +383,7 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
             try:
                 p50 = f6[name].values
                 xs = list(range(len(hx), len(hx) + len(p50)))
-                ax.plot(xs, p50, color='red', linestyle='-', linewidth=2, marker='o')
+                ax.plot(xs, p50, color='red', linestyle='-', linewidth=3, marker='o', markersize=6)
                 if f6_min is not None and f6_max is not None and name in f6_min.columns and name in f6_max.columns:
                     lo = f6_min[name].values; hi = f6_max[name].values
                     ax.fill_between(xs, lo, hi, color='red', alpha=0.2)
@@ -381,7 +392,7 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
         # clean x ticks to avoid overlap
         ax.set_xticks(list(range(len(hx), len(hx)+6)))
         ax.set_xticklabels([f't+{i}' for i in range(1,7)])
-        ax.set_frame_on(False); plt.tight_layout(); plt.savefig(f'Images/ex{idx}_sce.png', bbox_inches='tight'); plt.close(fig)
+        ax.set_frame_on(False); plt.tight_layout(); plt.savefig(f'Images/ex{idx}_sce.png', **SAVE_KW); plt.close(fig)
 
         # exN_all: closest historical matches
         drawn = False
@@ -405,20 +416,23 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
                 panel = items[:4]
                 if panel:
                     fig, axes = plt.subplots(2, 2, figsize=(12, 6))
+                    fig.patch.set_facecolor('white')
                     axes = axes.flatten()
                     for j, (dist, series) in enumerate(panel):
                         axp = axes[j]
                         try:
-                            axp.plot(series.index, series.values, color='#555555', linestyle='-', linewidth=2.5, marker='o')
+                            axp.set_facecolor('white')
+                            axp.plot(series.index, series.values, color='#444444', linestyle='-', linewidth=3, marker='o', markersize=4)
                             axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
                         except Exception:
-                            axp.plot(range(len(series)), list(series), color='#555555', linestyle='-', linewidth=2.5, marker='o')
+                            axp.set_facecolor('white')
+                            axp.plot(range(len(series)), list(series), color='#444444', linestyle='-', linewidth=3, marker='o', markersize=4)
                             axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
                         axp.set_frame_on(False)
                         axp.set_xticks([]); axp.set_yticks([])
                     for j in range(len(panel),4):
                         axes[j].axis('off')
-                    plt.tight_layout(); plt.savefig(f'Images/ex{idx}_all.png', bbox_inches='tight'); plt.close(fig)
+                    plt.tight_layout(); plt.savefig(f'Images/ex{idx}_all.png', **SAVE_KW); plt.close(fig)
                     drawn = True
             except Exception:
                 pass
@@ -428,20 +442,23 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
                 matches = _compute_fallback_matches(hist, name)
                 if matches:
                     fig, axes = plt.subplots(2, 2, figsize=(12, 6))
+                    fig.patch.set_facecolor('white')
                     axes = axes.flatten()
                     for j, (dist, series) in enumerate(matches):
                         axp = axes[j]
                         try:
-                            axp.plot(series.index, series.values, color='#555555', linestyle='-', linewidth=2.5, marker='o')
+                            axp.set_facecolor('white')
+                            axp.plot(series.index, series.values, color='#444444', linestyle='-', linewidth=3, marker='o', markersize=4)
                             axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
                         except Exception:
-                            axp.plot(range(len(series)), list(series), color='#555555', linestyle='-', linewidth=2.5, marker='o')
+                            axp.set_facecolor('white')
+                            axp.plot(range(len(series)), list(series), color='#444444', linestyle='-', linewidth=3, marker='o', markersize=4)
                             axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
                         axp.set_frame_on(False)
                         axp.set_xticks([]); axp.set_yticks([])
                     for j in range(len(matches), 4):
                         axes[j].axis('off')
-                    plt.tight_layout(); plt.savefig(f'Images/ex{idx}_all.png', bbox_inches='tight'); plt.close(fig)
+                    plt.tight_layout(); plt.savefig(f'Images/ex{idx}_all.png', **SAVE_KW); plt.close(fig)
                     drawn = True
             except Exception:
                 pass

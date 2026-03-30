@@ -331,55 +331,61 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
         name_variants = [name]
         if name in RENAME_REV:
             name_variants.append(RENAME_REV[name])
-        # exN_sce: scenarios/forecast
-        fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-        fig.patch.set_facecolor('white'); ax.set_facecolor('white')
-        # history (last 10 months)
-        hx = hist[name].tail(10) if name in hist.columns else pd.Series([], dtype=float)
-        ax.plot(range(len(hx)), hx.values, color='black', linestyle='-', linewidth=3, marker='o', markersize=6)
-        # Try scenario dictionary first
-        plotted = False
-        try:
-            scen_df = None
-            if sce_dict:
-                for nm in name_variants:
-                    if nm in sce_dict:
-                        val = sce_dict[nm]
-                        scen_df = val[1] if isinstance(val, (list, tuple)) and len(val)>1 else None
-                        if isinstance(scen_df, pd.DataFrame) and not scen_df.empty:
-                            break
-            # If pickle missing, compute a quick fallback set of scenarios
-            if (not isinstance(scen_df, pd.DataFrame)) or scen_df is None or scen_df.empty:
-                try:
-                    df_conf = pd.read_csv('reg_coun.csv', index_col=0)
-                    # Align names with RENAME map
-                    df_conf = df_conf.rename(index=RENAME)
-                except Exception:
-                    df_conf = None
-                scen_df = _compute_fallback_scenarios(hist, name, df_conf=df_conf)
-            if isinstance(scen_df, pd.DataFrame) and not scen_df.empty:
-                # pick top 3 scenarios by index if index numeric (probability); else by row means
-                try:
-                    order_idx = pd.Series(scen_df.index).sort_values(ascending=False).index[:3]
-                    sel = scen_df.iloc[order_idx, :]
-                except Exception:
-                    sel = scen_df.iloc[:3, :]
-                # rescale using recent history window
-                if len(hx):
-                    hmin, hmax = float(hx.min()), float(hx.max())
-                    rng = (hmax - hmin) if (hmax - hmin) != 0 else 1.0
-                    rescaled = sel.apply(lambda s: s*(rng) + hmin)
-                else:
-                    rescaled = sel.copy()
-                # plot scenarios
-                for i, (_, row) in enumerate(rescaled.iterrows()):
-                    xs = list(range(len(hx), len(hx) + len(row)))
-                    ax.plot(xs, row.values, linestyle='-', linewidth=3 if i==0 else 2, color='#df2226' if i==0 else '#888888', marker='o' if i==0 else None, markersize=5)
-                plotted = True
-        except Exception:
-            pass
-        # Fallback: simple forecast band from f6_min/max
-        if not plotted:
+        # exN_sce: scenario mosaic with probabilities (prefer pickles)
+        scen_df = None
+        if sce_dict:
+            for nm in name_variants:
+                if nm in sce_dict:
+                    val = sce_dict[nm]
+                    scen_df = val[1] if isinstance(val, (list, tuple)) and len(val)>1 else None
+                    if isinstance(scen_df, pd.DataFrame) and not scen_df.empty:
+                        break
+        if isinstance(scen_df, pd.DataFrame) and not scen_df.empty:
+            num = len(scen_df)
+            if num > 2:
+                layout = [[0,0,0,0,0,3], [1,1,1,1,1,4], [2,2,2,2,2,5]]
+            elif num == 2:
+                layout = [[2,2,2,2,2,9],[0,0,0,0,0,3],[0,0,0,0,0,3],[0,0,0,0,0,3],[5,5,5,5,5,6],[1,1,1,1,1,4],[1,1,1,1,1,4],[1,1,1,1,1,4],[7,7,7,7,7,8]]
+            else:
+                layout = [[1,1,1,1,1,4], [0,0,0,0,0,3], [2,2,2,2,2,5]]
+            fig, axes = plt.subplot_mosaic(layout, figsize=(10, 8))
+            fig.patch.set_facecolor('white')
+            try:
+                order_idx = pd.Series(scen_df.index).sort_values(ascending=False).index[:3]
+                sel = scen_df.iloc[order_idx, :]
+            except Exception:
+                sel = scen_df.iloc[:3, :]
+            base = hist[name] if name in hist.columns else pd.Series([], dtype=float)
+            b = (base - base.min()) / (base.max() - base.min()) if len(base) and (base.max() - base.min()) != 0 else base
+            for c, (p, row) in enumerate(sel.iterrows()):
+                prob = float(p) if not isinstance(p, tuple) else float(p[0])
+                color = '#df2226' if prob >= 0.5 else '#df' + f"{34 + int((0.5 - prob)*100*3):x}" + f"{38 + int((0.5 - prob)*100*3):x}"
+                scen = pd.Series(b.tolist() + row.tolist())
+                scen = scen * (base.max() - base.min()) + base.min() if len(base) and (base.max()-base.min())!=0 else scen
+                ax_line = axes[c]
+                ax_text = axes.get(c+3, None)
+                ax_line.set_facecolor('white')
+                ax_line.plot(scen, color='gray', linestyle='-', linewidth=2)
+                ax_line.plot(scen.iloc[-7:], color=color, linestyle='-', linewidth=5)
+                ax_line.set_frame_on(False)
+                ax_line.set_xticks([10,11,12,13,14,15], [f't+{i}' if i not in [1,3,5] else '' for i in range(1,7)])
+                ax_line.yaxis.set_major_locator(MaxNLocator(nbins=4, integer=True))
+                ax_line.tick_params(axis='y', labelsize=20)
+                ax_line.tick_params(axis='x', labelsize=20, rotation=30)
+                ax_line.grid('y', alpha=0.5)
+                for sp in ['top','right','bottom','left']:
+                    ax_line.spines[sp].set_visible(False)
+                if ax_text is not None:
+                    ax_text.text(0.1, 0.4, f'Freq = {int(prob*100)}%', fontsize=30, color=color)
+                    ax_text.set_frame_on(False)
+                    ax_text.set_xticks([]); ax_text.set_yticks([])
+            plt.tight_layout(); plt.savefig(f'Images/ex{idx}_sce.png', **SAVE_KW); plt.close(fig)
+        else:
+            # Fallback simple overlay
+            fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+            fig.patch.set_facecolor('white'); ax.set_facecolor('white')
+            hx = hist[name].tail(10) if name in hist.columns else pd.Series([], dtype=float)
+            ax.plot(range(len(hx)), hx.values, color='black', linestyle='-', linewidth=3, marker='o', markersize=6)
             try:
                 p50 = f6[name].values
                 xs = list(range(len(hx), len(hx) + len(p50)))
@@ -389,10 +395,9 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
                     ax.fill_between(xs, lo, hi, color='red', alpha=0.2)
             except Exception:
                 pass
-        # clean x ticks to avoid overlap
-        ax.set_xticks(list(range(len(hx), len(hx)+6)))
-        ax.set_xticklabels([f't+{i}' for i in range(1,7)])
-        ax.set_frame_on(False); plt.tight_layout(); plt.savefig(f'Images/ex{idx}_sce.png', **SAVE_KW); plt.close(fig)
+            ax.set_xticks(list(range(len(hx), len(hx)+6)))
+            ax.set_xticklabels([f't+{i}' for i in range(1,7)])
+            ax.set_frame_on(False); plt.tight_layout(); plt.savefig(f'Images/ex{idx}_sce.png', **SAVE_KW); plt.close(fig)
 
         # exN_all: closest historical matches
         drawn = False
@@ -422,12 +427,14 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
                         axp = axes[j]
                         try:
                             axp.set_facecolor('white')
-                            axp.plot(series.index, series.values, color='#444444', linestyle='-', linewidth=3, marker='o', markersize=4)
-                            axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
+                            axp.plot(series.index, series.values, color='#808080', linestyle='-', linewidth=2, marker='o', markersize=4)
+                            axp.xaxis.set_major_formatter(mdates.DateFormatter('%b %y'))
+                            axp.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=4, maxticks=4))
+                            axp.set_title(series.name, fontsize=12, color='#808080')
                         except Exception:
                             axp.set_facecolor('white')
-                            axp.plot(range(len(series)), list(series), color='#444444', linestyle='-', linewidth=3, marker='o', markersize=4)
-                            axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
+                            axp.plot(range(len(series)), list(series), color='#808080', linestyle='-', linewidth=2, marker='o', markersize=4)
+                            axp.set_title(f'Match {j+1}', fontsize=12, color='#808080')
                         axp.set_frame_on(False)
                         axp.set_xticks([]); axp.set_yticks([])
                     for j in range(len(panel),4):
@@ -448,12 +455,14 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
                         axp = axes[j]
                         try:
                             axp.set_facecolor('white')
-                            axp.plot(series.index, series.values, color='#444444', linestyle='-', linewidth=3, marker='o', markersize=4)
-                            axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
+                            axp.plot(series.index, series.values, color='#808080', linestyle='-', linewidth=2, marker='o', markersize=4)
+                            axp.xaxis.set_major_formatter(mdates.DateFormatter('%b %y'))
+                            axp.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=4, maxticks=4))
+                            axp.set_title(series.name, fontsize=12, color='#808080')
                         except Exception:
                             axp.set_facecolor('white')
-                            axp.plot(range(len(series)), list(series), color='#444444', linestyle='-', linewidth=3, marker='o', markersize=4)
-                            axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
+                            axp.plot(range(len(series)), list(series), color='#808080', linestyle='-', linewidth=2, marker='o', markersize=4)
+                            axp.set_title(f'Match {j+1}', fontsize=12, color='#808080')
                         axp.set_frame_on(False)
                         axp.set_xticks([]); axp.set_yticks([])
                     for j in range(len(matches), 4):

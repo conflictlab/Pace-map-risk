@@ -455,6 +455,21 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
                 pass
 
 
+def _resolve_top4_from_best() -> Optional[List[str]]:
+    for path in ('best.from_site.csv', 'best.csv'):
+        if os.path.exists(path):
+            try:
+                dfb = pd.read_csv(path)
+                if 'name' in dfb.columns:
+                    # Files are ordered [4th,3rd,2nd,1st]; return [1st,2nd,3rd,4th]
+                    names = dfb['name'].tolist()
+                    names = list(reversed(names))
+                    return names[:4]
+            except Exception:
+                continue
+    return None
+
+
 def main():
     ensure_dirs(); setup_fonts()
     f6, f6_min, f6_max = load_forecasts()
@@ -472,8 +487,8 @@ def main():
     build_global_series(hist, f6)
     # bar plots
     barplots_by_country(value_sum, hist6)
-    # Top-4 countries by forecasted next-6 months sum
-    top4 = value_sum.sort_values(ascending=False).head(4).index.tolist()
+    # Top-4: prefer site-derived list to align with PDF labels
+    top4 = _resolve_top4_from_best() or value_sum.sort_values(ascending=False).head(4).index.tolist()
     top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=sce, matches_dict=matches)
     print('Newsletter images built from forecasts_h6.csv')
 

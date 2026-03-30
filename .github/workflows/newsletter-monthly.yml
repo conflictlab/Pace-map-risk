@@ -41,11 +41,46 @@ jobs:
         run: |
           pip install matplotlib seaborn dtaidistance scipy
 
-      - name: Generate compute artifacts for current data (Hist, forecasts, pickles)
+      - name: Wait for compute run (forecast_metadata fresh)
         env:
-          MPLBACKEND: Agg
+          REPO: conflictlab/Pace-map-risk
         run: |
-          python generate_forecasts.py
+          set -e
+          ATTEMPTS=18 # up to ~90 minutes
+          URL="https://raw.githubusercontent.com/${REPO}/main/forecast_metadata.json"
+          for i in $(seq 1 $ATTEMPTS); do
+            code=$(curl -s -o /tmp/forecast_meta.json -w '%{http_code}' "$URL" || true)
+            if [ "$code" = "200" ]; then
+              run_date=$(jq -r '.run_date // ""' /tmp/forecast_meta.json 2>/dev/null || echo "")
+              if [ -n "$run_date" ] && [ "$run_date" != "null" ]; then
+                clean_date=$(echo "$run_date" | sed 's/\.[0-9]*$//')
+                ts=$(date -d "$clean_date" +%s 2>/dev/null || echo "")
+                if [ -n "$ts" ]; then
+                  now=$(date -u +%s)
+                  age_min=$(( (now - ts) / 60 ))
+                else
+                  age_min=999999
+                fi
+              else
+                age_min=999999
+              fi
+            else
+              age_min=999999
+            fi
+            if [ "$age_min" -le 480 ]; then echo "Compute fresh (age ${age_min} min)."; break; fi
+            echo "Waiting for compute (attempt $i/$ATTEMPTS) — current age ${age_min} min"; sleep 300
+          done
+
+      - name: Download compute artifacts (Hist, forecasts, pickles)
+        env:
+          REPO: conflictlab/Pace-map-risk
+        run: |
+          set -e
+          base="https://raw.githubusercontent.com/${REPO}/main"
+          for f in Hist.csv forecasts_h6.csv saved_dictionary.pkl sce_dictionary.pkl; do
+            echo "Fetching $f ...";
+            curl -fsSL "$base/$f" -o "$f";
+          done
 
       - name: Generate best.from_site.csv from forecasts (align selection)
         run: |
@@ -56,7 +91,7 @@ jobs:
       - name: Build newsletter images from forecasts (aligned with dashboard)
         run: |
           # Try to fetch scenario/match pickles (optional)
-          # Prefer locally generated pickles; fallback to remote if missing
+          # Prefer compute artifacts downloaded above; if missing, fallback to remote
           if [ ! -f sce_dictionary.pkl ]; then curl -fsSL https://raw.githubusercontent.com/conflictlab/Pace-map-risk/main/sce_dictionary.pkl -o sce_dictionary.pkl || true; fi
           if [ ! -f saved_dictionary.pkl ]; then curl -fsSL https://raw.githubusercontent.com/conflictlab/Pace-map-risk/main/saved_dictionary.pkl -o saved_dictionary.pkl || true; fi
           if [ -f scripts/newsletter_images_thomas.py ]; then

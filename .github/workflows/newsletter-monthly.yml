@@ -89,54 +89,60 @@ jobs:
             echo "newsletter.py not found; skipping HTML generation" >&2
           fi
 
-      - name: Commit newsletter artifacts
+      - name: Publish newsletter without rebase (worktree)
         run: |
-          set -e
+          set -euo pipefail
           ts=$(date -u +"%B %Y")
           out_name="Newsletter_${ts}.pdf"
           mkdir -p Newsletters
           if ls Newsletter_*.pdf >/dev/null 2>&1; then
             mv Newsletter_*.pdf Newsletters/ || true
           fi
+
+          # Prepare a clean worktree at origin/main to avoid any merge/rebase on binaries
+          git fetch origin main
+          WRK="${{ runner.temp }}/nwsl-worktree"
+          rm -rf "$WRK" || true
+          git worktree add "$WRK" origin/main
+
+          changed=0
+          # Copy generated artifacts into the clean worktree
+          if [ -f assets/Report.pdf ]; then
+            mkdir -p "$WRK/assets"
+            cp -f assets/Report.pdf "$WRK/assets/Report.pdf"; changed=1
+          fi
+          if ls Newsletters/*.pdf >/dev/null 2>&1; then
+            mkdir -p "$WRK/Newsletters"
+            # Preserve filename with spaces
+            find Newsletters -maxdepth 1 -name '*.pdf' -print0 | xargs -0 -I{} cp -f "{}" "$WRK/Newsletters/"; changed=1
+          fi
+          if [ -d assets/html_output/_pdf_images ]; then
+            mkdir -p "$WRK/assets/html_output"
+            rm -rf "$WRK/assets/html_output/_pdf_images" || true
+            cp -R assets/html_output/_pdf_images "$WRK/assets/html_output/"; changed=1
+          fi
+          # Optionally copy rendered HTML output if produced
+          if [ -f assets/html_output/output.html ]; then
+            mkdir -p "$WRK/assets/html_output"
+            cp -f assets/html_output/output.html "$WRK/assets/html_output/output.html" || true
+          fi
+
+          if [ "$changed" -eq 0 ]; then
+            echo "No newsletter artifacts to publish"; git worktree remove "$WRK" --force; exit 0
+          fi
+
+          pushd "$WRK" >/dev/null
           git config user.name "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
-          # Stage all changes produced by this job to avoid unstaged files during rebase
-          git add -A
-          if ! git diff --cached --quiet; then
+          git add assets/Report.pdf 2>/dev/null || true
+          git add assets/html_output/_pdf_images 2>/dev/null || true
+          git add assets/html_output/output.html 2>/dev/null || true
+          git add Newsletters/*.pdf 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No changes in clean worktree; nothing to commit"
+          else
             git commit -m "chore(newsletter): publish $ts newsletter (PDF/HTML)"
-          else
-            echo "No newsletter changes to commit"
+            git push origin HEAD:main
           fi
-          # Configure merge drivers so generated binaries auto-resolve during rebase
-          if [ -f scripts/ci-merge-driver-setup.sh ]; then
-            bash scripts/ci-merge-driver-setup.sh || true
-          else
-            git config merge.keepTheirs.name "Keep theirs (rebased commit)"
-            git config merge.keepTheirs.driver 'sh -c '\''cat "$3" > "$2"'\'' _ || true
-          fi
-          # Rebase on latest main to avoid non-fast-forward push failures; autostash local mods
-          git fetch origin main
-          git config rebase.autoStash true
-          if ! git pull --rebase origin main; then
-            echo "Rebase failed; attempting auto-resolve for newsletter artifacts" >&2
-            if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
-              # Prefer rebased commit's version for generated files
-              for f in $(git diff --name-only --diff-filter=U); do
-                case "$f" in
-                  Newsletters/*.pdf|assets/Report.pdf|assets/html_output/_pdf_images/*)
-                    git checkout --theirs -- "$f" || true ;;
-                  *) ;;
-                esac
-              done
-              git add -A
-              if ! git rebase --continue; then
-                echo "Rebase continue failed; aborting" >&2
-                git rebase --abort || true
-                exit 1
-              fi
-            else
-              echo "Not in rebase state; aborting" >&2
-              exit 1
-            fi
-          fi
-          git push origin HEAD:main
+          popd >/dev/null
+          git worktree remove "$WRK" --force

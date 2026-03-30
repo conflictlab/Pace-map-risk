@@ -409,10 +409,10 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
                     for j, (dist, series) in enumerate(panel):
                         axp = axes[j]
                         try:
-                            axp.plot(series.index, series.values, color='#808080', linestyle='-', linewidth=2, marker='o')
+                            axp.plot(series.index, series.values, color='#555555', linestyle='-', linewidth=2.5, marker='o')
                             axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
                         except Exception:
-                            axp.plot(range(len(series)), list(series), color='#808080', linestyle='-', linewidth=2, marker='o')
+                            axp.plot(range(len(series)), list(series), color='#555555', linestyle='-', linewidth=2.5, marker='o')
                             axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
                         axp.set_frame_on(False)
                         axp.set_xticks([]); axp.set_yticks([])
@@ -432,10 +432,10 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
                     for j, (dist, series) in enumerate(matches):
                         axp = axes[j]
                         try:
-                            axp.plot(series.index, series.values, color='#808080', linestyle='-', linewidth=2, marker='o')
+                            axp.plot(series.index, series.values, color='#555555', linestyle='-', linewidth=2.5, marker='o')
                             axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
                         except Exception:
-                            axp.plot(range(len(series)), list(series), color='#808080', linestyle='-', linewidth=2, marker='o')
+                            axp.plot(range(len(series)), list(series), color='#555555', linestyle='-', linewidth=2.5, marker='o')
                             axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
                         axp.set_frame_on(False)
                         axp.set_xticks([]); axp.set_yticks([])

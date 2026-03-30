@@ -154,44 +154,51 @@ def barplots_by_country(value_sum, hist6):
     df = pd.DataFrame({'name': value_sum.index, 'value': value_sum.values}).merge(
         pd.DataFrame({'name': hist6.index, 'hist': hist6.values}), on='name', how='left').fillna(0)
     df['diff'] = df['value'] - df['hist']
-    # sub2: Top 10 by value
-    top10 = df.sort_values('value', ascending=False).head(10).set_index('name').sort_values('value')
-    top10['color'] = np.where(top10['value'] > top10['hist'], 'red', 'black')
     def alpha_row(r):
         denom = r['hist'] + 1
-        return np.clip(abs(r['value'] - r['hist']) / denom / 2 + 0.5, 0, 1)
+        return float(np.clip(abs(r['value'] - r['hist']) / denom / 2 + 0.5, 0, 1))
+
+    # sub2: Top 10 by value
+    top10 = df.nlargest(10, 'value').copy().sort_values('value')
+    top10['color'] = np.where(top10['value'] > top10['hist'], 'red', 'black')
     top10['alpha'] = top10.apply(alpha_row, axis=1)
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    sns.barplot(x=top10.index, y='value', data=top10, palette=top10['color'], ax=ax)
-    for i, bar in enumerate(ax.patches): bar.set_alpha(top10['alpha'].iloc[i])
+    t10 = top10.reset_index(drop=True)
+    sns.barplot(data=t10, x='name', y='value', hue='color', palette={'red':'red','black':'black'}, legend=False, ax=ax)
+    # Ensure alpha per bar
+    for patch, a in zip(ax.patches, t10['alpha'].tolist()):
+        patch.set_alpha(a)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
     for sp in ['top','right','left']: ax.spines[sp].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD'); ax.tick_params(bottom=False, left=False)
     plt.yscale('log'); ax.set_yticklabels([]); ax.set_yticks([])
     plt.savefig('Images/sub2.png', bbox_inches='tight'); plt.close(fig)
 
-    # sub2_d: largest decreases (negative diff) — show absolute (positive) bars for display
-    dec = df.sort_values('diff').head(10).copy()
+    # sub2_d: largest decreases
+    dec = df.nsmallest(10, 'diff').copy()
     dec['diff_abs'] = -dec['diff']
-    dec = dec.set_index('name')
     dec['color'] = np.where(dec['diff'] < 0, 'black', 'red')
     dec['alpha'] = dec.apply(alpha_row, axis=1)
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    sns.barplot(x=dec.index, y='diff_abs', data=dec, palette=dec['color'], ax=ax)
-    for i, bar in enumerate(ax.patches): bar.set_alpha(dec['alpha'].iloc[i])
+    dd = dec.sort_values('diff_abs').reset_index(drop=True)
+    sns.barplot(data=dd, x='name', y='diff_abs', hue='color', palette={'red':'red','black':'black'}, legend=False, ax=ax)
+    for patch, a in zip(ax.patches, dd['alpha'].tolist()):
+        patch.set_alpha(a)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
     for sp in ['top','right','left']: ax.spines[sp].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD'); ax.tick_params(bottom=False, left=False)
     plt.yscale('log'); ax.set_yticklabels([]); ax.set_yticks([])
     plt.savefig('Images/sub2_d.png', bbox_inches='tight'); plt.close(fig)
 
-    # sub2_i: largest increases (positive diff)
-    inc = df.sort_values('diff', ascending=False).head(10).copy().set_index('name')
+    # sub2_i: largest increases
+    inc = df.nlargest(10, 'diff').copy()
     inc['color'] = np.where(inc['diff'] > 0, 'red', 'black')
     inc['alpha'] = inc.apply(alpha_row, axis=1)
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    sns.barplot(x=inc.index, y='diff', data=inc, palette=inc['color'], ax=ax)
-    for i, bar in enumerate(ax.patches): bar.set_alpha(inc['alpha'].iloc[i])
+    ii = inc.sort_values('diff').reset_index(drop=True)
+    sns.barplot(data=ii, x='name', y='diff', hue='color', palette={'red':'red','black':'black'}, legend=False, ax=ax)
+    for patch, a in zip(ax.patches, ii['alpha'].tolist()):
+        patch.set_alpha(a)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
     for sp in ['top','right','left']: ax.spines[sp].set_visible(False)
     ax.spines['bottom'].set_color('#DDDDDD'); ax.tick_params(bottom=False, left=False)

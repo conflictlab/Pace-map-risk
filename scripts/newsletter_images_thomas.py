@@ -57,9 +57,15 @@ def load_pickles():
         dict_m = pickle.load(f)
     with open('sce_dictionary.pkl', 'rb') as f:
         dict_sce_plot_f = pickle.load(f)
-    # Ensure renamed keys exist
-    dict_m_ren = {RENAME.get(k, k): v for k, v in dict_m.items()}
-    dict_sce_plot_ren = {RENAME.get(k, k): v for k, v in dict_sce_plot_f.items()}
+    # Ensure renamed keys exist (idempotent: applying to already-renamed keys is a no-op)
+    dict_m_ren = dict(dict_m)
+    for k, v in list(dict_m.items()):
+        rk = RENAME.get(k, k)
+        dict_m_ren[rk] = v
+    dict_sce_plot_ren = dict(dict_sce_plot_f)
+    for k, v in list(dict_sce_plot_f.items()):
+        rk = RENAME.get(k, k)
+        dict_sce_plot_ren[rk] = v
     return dict_m_ren, dict_sce_plot_ren
 
 
@@ -97,22 +103,33 @@ def plot_history(hist, name, idx):
 
 
 def plot_matches(dict_m, name, idx):
-    # Thomas uses original name for dict_m access
-    name_before = RENAME_REV.get(name, name)
+    # Try both renamed and original keys
+    keys_to_try = [name]
+    nb = RENAME_REV.get(name)
+    if nb and nb not in keys_to_try:
+        keys_to_try.append(nb)
     panel = []
-    if name_before in dict_m:
-        for c in range(4):
-            try:
-                series = dict_m[name_before][c][0]
-                dist = dict_m[name_before][c][1] if len(dict_m[name_before][c]) > 1 else 0.0
-                panel.append((dist, series))
-            except Exception:
+    for key in keys_to_try:
+        if key in dict_m:
+            for c in range(4):
+                try:
+                    series = dict_m[key][c][0]
+                    dist = dict_m[key][c][1] if len(dict_m[key][c]) > 1 else 0.0
+                    panel.append((dist, series))
+                except Exception:
+                    break
+            if panel:
                 break
-    if not panel:
-        return
     fig, axes = plt.subplots(2, 2, figsize=(12, 6))
     fig.patch.set_facecolor('white')
     axes = axes.flatten()
+    if not panel:
+        # Overwrite with placeholder to avoid stale images
+        for ax in axes:
+            ax.axis('off')
+        axes[0].text(0.5, 0.5, 'No matches found', ha='center', va='center', fontsize=14, color='#808080')
+        plt.tight_layout(); plt.savefig(f'Images/ex{idx}_all.png', **SAVE_KW); plt.close(fig)
+        return
     for j, (dist, series) in enumerate(panel[:4]):
         axp = axes[j]
         try:
@@ -133,13 +150,35 @@ def plot_matches(dict_m, name, idx):
 
 
 def plot_scenarios(hist, dict_sce_plot, name, idx):
-    if name not in dict_sce_plot:
-        return
-    try:
-        scen_df = dict_sce_plot[name][1]
-    except Exception:
+    # Try both renamed and original keys
+    scen_df = None
+    if name in dict_sce_plot:
+        try:
+            scen_df = dict_sce_plot[name][1]
+        except Exception:
+            scen_df = None
+    if scen_df is None:
+        nb = RENAME_REV.get(name)
+        if nb and nb in dict_sce_plot:
+            try:
+                scen_df = dict_sce_plot[nb][1]
+            except Exception:
+                scen_df = None
+    if scen_df is None:
+        # Overwrite with a placeholder so stale images don't persist
+        fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+        fig.patch.set_facecolor('white'); ax.set_facecolor('white')
+        ax.axis('off')
+        ax.text(0.5, 0.5, 'No scenarios available', ha='center', va='center', fontsize=14, color='#808080')
+        plt.tight_layout(); plt.savefig(f'Images/ex{idx}_sce.png', **SAVE_KW); plt.close(fig)
         return
     if scen_df is None or len(scen_df) == 0:
+        # Overwrite with a placeholder
+        fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+        fig.patch.set_facecolor('white'); ax.set_facecolor('white')
+        ax.axis('off')
+        ax.text(0.5, 0.5, 'No scenarios available', ha='center', va='center', fontsize=14, color='#808080')
+        plt.tight_layout(); plt.savefig(f'Images/ex{idx}_sce.png', **SAVE_KW); plt.close(fig)
         return
     num = len(scen_df)
     if num > 2:
@@ -206,4 +245,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

@@ -37,9 +37,15 @@ jobs:
             pip install 'pandas>=1.4.0,<2.0.0' reportlab weasyprint geopandas matplotlib seaborn || true
           fi
 
-      - name: Install image deps (matplotlib/seaborn)
+      - name: Install image deps (matplotlib/seaborn + DTW/cluster)
         run: |
-          pip install matplotlib seaborn
+          pip install matplotlib seaborn dtaidistance scipy
+
+      - name: Generate best.from_site.csv from forecasts (align selection)
+        run: |
+          if [ -f scripts/generate_best_from_forecasts.py ]; then
+            python scripts/generate_best_from_forecasts.py
+          fi
 
       - name: Build newsletter images from forecasts (aligned with dashboard)
         run: |
@@ -50,12 +56,6 @@ jobs:
             python scripts/newsletter_images_from_forecasts.py
           else
             echo "scripts/newsletter_images_from_forecasts.py not found" >&2; exit 1
-          fi
-
-      - name: Generate best.from_site.csv from forecasts
-        run: |
-          if [ -f scripts/generate_best_from_forecasts.py ]; then
-            python scripts/generate_best_from_forecasts.py
           fi
 
       - name: Build newsletter PDF

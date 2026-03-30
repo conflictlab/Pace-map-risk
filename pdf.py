@@ -16,6 +16,8 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import  Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 import pandas as pd
+from PIL import Image
+import os
 
 
 # Path to your Poppins font .ttf files
@@ -85,16 +87,46 @@ c.setFont(subtitle_font, subtitle_font_size)
 c.setFillColor(subtitle_color)
 c.drawCentredString(297.5, 670, subtitle_text)  # Positioning subtitle below the title
 
+
+# Helper to robustly embed images (flattens transparency)
+_pdf_img_cache_dir = os.path.join('assets', 'html_output', '_pdf_images')
+os.makedirs(_pdf_img_cache_dir, exist_ok=True)
+
+def _flatten_to_rgb(src_path: str) -> str:
+    """Return a cached RGB (no alpha) version of the image for reliable PDF rendering."""
+    base = os.path.basename(src_path)
+    name, _ext = os.path.splitext(base)
+    out_path = os.path.join(_pdf_img_cache_dir, f"{name}.jpg")
+    try:
+        with Image.open(src_path) as im:
+            if im.mode in ("RGBA", "LA") or (im.mode == "P" and 'transparency' in im.info):
+                # Flatten onto white background
+                bg = Image.new("RGB", im.size, (255, 255, 255))
+                bg.paste(im.convert("RGBA"), mask=im.convert("RGBA").split()[-1])
+                bg.save(out_path, format='JPEG', quality=90)
+            else:
+                # Ensure RGB and save
+                im.convert("RGB").save(out_path, format='JPEG', quality=90)
+    except Exception:
+        # On any failure, fall back to original path
+        return src_path
+    return out_path
+
+def draw_image_safe(path: str, x: float, y: float, width: float, height: float):
+    safe_path = _flatten_to_rgb(path)
+    # Avoid mask=auto to prevent pdf.js transparency quirks
+    c.drawImage(safe_path, x=x, y=y, width=width, height=height)
+
 # Place the image on the PDF
 map_image_path = 'Images/map.png'
-c.drawImage(map_image_path, x=70, y=440, width=450, height=225, mask='auto')  # Scaled to fit
+draw_image_safe(map_image_path, x=70, y=440, width=450, height=225)  # Scaled to fit
 
 
 t_2 = "Global expected Fatalities"
 c.setFillColor(subtitle_color)
 c.drawCentredString(297.5, 415, t_2)
 sub_image1 = 'Images/sub1_1.png'
-c.drawImage(sub_image1, x=25, y=250, width=550,height=160,  mask='auto')  # Scaled to fit
+draw_image_safe(sub_image1, x=25, y=250, width=550, height=160)  # Scaled to fit
 
 
 
@@ -104,9 +136,9 @@ c.drawImage(sub_image1, x=25, y=250, width=550,height=160,  mask='auto')  # Scal
 sub_image2 = 'Images/sub2.png'
 sub_image3 = 'Images/sub2_i.png'
 sub_image4 = 'Images/sub2_d.png'
-c.drawImage(sub_image2, x=30, y=70, width=180,height=150, mask='auto')
-c.drawImage(sub_image3, x=215, y=70, width=180,height=150, mask='auto')  
-c.drawImage(sub_image4, x=410, y=70, width=180,height=150, mask='auto')  
+draw_image_safe(sub_image2, x=30, y=70, width=180, height=150)
+draw_image_safe(sub_image3, x=215, y=70, width=180, height=150)
+draw_image_safe(sub_image4, x=410, y=70, width=180, height=150)
 subtitle_font_size = 10
   # Assuming "gris foncé 3" is a dark grey color
 c.setFont(subtitle_font, subtitle_font_size)
@@ -122,7 +154,7 @@ c.drawCentredString(510, 225, t_4)
 
 
 pace_logo = 'Images/PaCE_final.png'
-c.drawImage(pace_logo, x=50, y=20, width=100,height=40,  mask='auto')  # Scaled to fit
+draw_image_safe(pace_logo, x=50, y=20, width=100, height=40)  # Scaled to fit
 
 info_text = "Click here for more info"
 info_url = "https://thomasschinca.github.io/Pace-map-risk/"
@@ -161,7 +193,6 @@ c.setFillColor(subtitle_color)
 c.drawString(letter[0] - right_margin - c.stringWidth('Contact', "Poppins", 11), bottom_margin + 3.25*line_height, 'Contact')
 c.showPage()
 
-import os
 # Prefer site-derived top-4 if present (keeps newsletter aligned with dashboard)
 best_path = 'best.from_site.csv' if os.path.exists('best.from_site.csv') else 'best.csv'
 df_best = pd.read_csv(best_path, index_col=0)
@@ -178,9 +209,9 @@ c.drawString(30, 760, title_text)
 # sub_image2 = 'Images/ex1.png'
 # sub_image3 = 'Images/ex1_all.png'
 # sub_image4 = 'Images/ex1_sce.png'
-# c.drawImage(sub_image2, x=10, y=610, width=200,height=120, mask='auto')
-# c.drawImage(sub_image3, x=210, y=610, width=240,height=120, mask='auto') 
-# c.drawImage(sub_image4, x=450, y=610, width=150,height=120, mask='auto')  
+# draw_image_safe(sub_image2, x=10, y=610, width=200, height=120)
+# draw_image_safe(sub_image3, x=210, y=610, width=240, height=120)
+# draw_image_safe(sub_image4, x=450, y=610, width=150, height=120)
 
 # subtitle_font_size = 10
 # c.setFont(subtitle_font, subtitle_font_size)
@@ -226,9 +257,9 @@ c.drawString(30, 760, title_text)
 sub_image2 = 'Images/ex1.png'
 sub_image3 = 'Images/ex1_all.png'
 sub_image4 = 'Images/ex1_sce.png'
-c.drawImage(sub_image2, x=10, y=610, width=200,height=120, mask='auto')
-c.drawImage(sub_image3, x=210, y=610, width=240,height=120, mask='auto') 
-c.drawImage(sub_image4, x=450, y=610, width=150,height=120, mask='auto')  
+draw_image_safe(sub_image2, x=10, y=610, width=200, height=120)
+draw_image_safe(sub_image3, x=210, y=610, width=240, height=120)
+draw_image_safe(sub_image4, x=450, y=610, width=150, height=120)
 
 subtitle_font_size = 10
 c.setFont(subtitle_font, subtitle_font_size)
@@ -255,9 +286,9 @@ c.drawString(30, 580, title_text)
 sub_image2 = 'Images/ex2.png'
 sub_image3 = 'Images/ex2_all.png'
 sub_image4 = 'Images/ex2_sce.png'
-c.drawImage(sub_image2, x=10, y=425, width=200,height=120, mask='auto')
-c.drawImage(sub_image3, x=210, y=425, width=240,height=120, mask='auto') 
-c.drawImage(sub_image4, x=450, y=425, width=150,height=120, mask='auto')    
+draw_image_safe(sub_image2, x=10, y=425, width=200, height=120)
+draw_image_safe(sub_image3, x=210, y=425, width=240, height=120)
+draw_image_safe(sub_image4, x=450, y=425, width=150, height=120)
 
 subtitle_font_size = 10
 c.setFont(subtitle_font, subtitle_font_size)
@@ -296,9 +327,9 @@ c.drawString(30, 400, title_text)
 sub_image2 = 'Images/ex3.png'
 sub_image3 = 'Images/ex3_all.png'
 sub_image4 = 'Images/ex3_sce.png'
-c.drawImage(sub_image2, x=10, y=250, width=200,height=120, mask='auto')
-c.drawImage(sub_image3, x=210, y=250, width=240,height=120, mask='auto')
-c.drawImage(sub_image4, x=450, y=250, width=150,height=120, mask='auto') 
+draw_image_safe(sub_image2, x=10, y=250, width=200, height=120)
+draw_image_safe(sub_image3, x=210, y=250, width=240, height=120)
+draw_image_safe(sub_image4, x=450, y=250, width=150, height=120)
 
 
 subtitle_font_size = 10
@@ -327,9 +358,9 @@ c.drawString(30, 230, title_text)
 sub_image2 = 'Images/ex4.png'
 sub_image3 = 'Images/ex4_all.png'
 sub_image4 = 'Images/ex4_sce.png'
-c.drawImage(sub_image2, x=10, y=70, width=200,height=120, mask='auto')
-c.drawImage(sub_image3, x=210, y=70, width=240,height=120, mask='auto')
-c.drawImage(sub_image4, x=450, y=70, width=150,height=120, mask='auto')  
+draw_image_safe(sub_image2, x=10, y=70, width=200, height=120)
+draw_image_safe(sub_image3, x=210, y=70, width=240, height=120)
+draw_image_safe(sub_image4, x=450, y=70, width=150, height=120)
 
 subtitle_font_size = 10
 c.setFont(subtitle_font, subtitle_font_size)
@@ -346,7 +377,7 @@ c.drawCentredString(525, 210, t_4)
 
 
 pace_logo = 'Images/PaCE_final.png'
-c.drawImage(pace_logo, x=50, y=20, width=100,height=40,  mask='auto')  # Scaled to fit
+draw_image_safe(pace_logo, x=50, y=20, width=100, height=40)  # Scaled to fit
 
 info_text = "Click here for more info"
 info_url = "https://thomasschinca.github.io/Pace-map-risk/"

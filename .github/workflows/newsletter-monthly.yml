@@ -41,6 +41,12 @@ jobs:
         run: |
           pip install matplotlib seaborn dtaidistance scipy
 
+      - name: Generate compute artifacts for current data (Hist, forecasts, pickles)
+        env:
+          MPLBACKEND: Agg
+        run: |
+          python generate_forecasts.py
+
       - name: Generate best.from_site.csv from forecasts (align selection)
         run: |
           if [ -f scripts/generate_best_from_forecasts.py ]; then
@@ -50,8 +56,9 @@ jobs:
       - name: Build newsletter images from forecasts (aligned with dashboard)
         run: |
           # Try to fetch scenario/match pickles (optional)
-          curl -fsSL https://raw.githubusercontent.com/conflictlab/Pace-map-risk/main/sce_dictionary.pkl -o sce_dictionary.pkl || true
-          curl -fsSL https://raw.githubusercontent.com/conflictlab/Pace-map-risk/main/saved_dictionary.pkl -o saved_dictionary.pkl || true
+          # Prefer locally generated pickles; fallback to remote if missing
+          if [ ! -f sce_dictionary.pkl ]; then curl -fsSL https://raw.githubusercontent.com/conflictlab/Pace-map-risk/main/sce_dictionary.pkl -o sce_dictionary.pkl || true; fi
+          if [ ! -f saved_dictionary.pkl ]; then curl -fsSL https://raw.githubusercontent.com/conflictlab/Pace-map-risk/main/saved_dictionary.pkl -o saved_dictionary.pkl || true; fi
           if [ -f scripts/newsletter_images_thomas.py ]; then
             python scripts/newsletter_images_thomas.py
           elif [ -f scripts/newsletter_images_from_forecasts.py ]; then

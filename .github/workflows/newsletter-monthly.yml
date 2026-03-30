@@ -41,7 +41,7 @@ jobs:
         run: |
           pip install matplotlib seaborn dtaidistance scipy
 
-      - name: Download compute artifacts (Hist, forecasts, pickles)
+      - name: Download compute artifacts (Hist, forecasts, pickles/JSON)
         env:
           REPO: conflictlab/Pace-map-risk
         run: |
@@ -50,6 +50,12 @@ jobs:
           for f in Hist.csv forecasts_h6.csv saved_dictionary.pkl sce_dictionary.pkl; do
             echo "Fetching $f ...";
             curl -fsSL "$base/$f" -o "$f";
+          done
+          # Also attempt to fetch pre-converted JSON artifacts to avoid pickle compatibility issues
+          mkdir -p public/data
+          for f in public/data/scenarios.json public/data/matches.json; do
+            echo "Fetching $f ...";
+            curl -fsSL "$base/$f" -o "$f" || true;
           done
 
       - name: Generate best.from_site.csv from forecasts (align selection)

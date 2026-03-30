@@ -9,6 +9,7 @@ Outputs (in ./Images):
   - ex1_sce.png, ex2_sce.png, ex3_sce.png, ex4_sce.png  (scenario mosaics)
 """
 import os
+import json
 import math
 import pickle
 import pandas as pd
@@ -52,20 +53,70 @@ def load_hist():
     return hist
 
 
+def _load_matches_json(path='public/data/matches.json'):
+    try:
+        with open(path, 'r') as f:
+            data = json.load(f)
+        # Convert JSON into dict_m-like structure: { country: [ [Series, dist], ... ] }
+        out = {}
+        for k, arr in data.items():
+            seqs = []
+            for it in arr:
+                try:
+                    ser = it.get('series') or {}
+                    vals = ser.get('values', [])
+                    idx = ser.get('index')
+                    name = ser.get('name')
+                    if idx is not None and len(idx) == len(vals):
+                        try:
+                            s = pd.Series(vals, index=pd.to_datetime(idx))
+                        except Exception:
+                            s = pd.Series(vals)
+                    else:
+                        s = pd.Series(vals)
+                    if name:
+                        try:
+                            s.name = name
+                        except Exception:
+                            pass
+                    dist = it.get('distance')
+                    seqs.append([s, dist])
+                except Exception:
+                    continue
+            out[RENAME.get(k, k)] = seqs
+        return out
+    except Exception:
+        return {}
+
+def _load_scenarios_json(path='public/data/scenarios.json'):
+    # Currently not used to reproduce mosaic exactly; keep stub for future use
+    try:
+        with open(path, 'r') as f:
+            _ = json.load(f)
+        # Returning {} will trigger p50 fallback for scenarios
+        return {}
+    except Exception:
+        return {}
+
 def load_pickles():
-    with open('saved_dictionary.pkl', 'rb') as f:
-        dict_m = pickle.load(f)
-    with open('sce_dictionary.pkl', 'rb') as f:
-        dict_sce_plot_f = pickle.load(f)
-    # Ensure renamed keys exist (idempotent: applying to already-renamed keys is a no-op)
-    dict_m_ren = dict(dict_m)
-    for k, v in list(dict_m.items()):
-        rk = RENAME.get(k, k)
-        dict_m_ren[rk] = v
-    dict_sce_plot_ren = dict(dict_sce_plot_f)
-    for k, v in list(dict_sce_plot_f.items()):
-        rk = RENAME.get(k, k)
-        dict_sce_plot_ren[rk] = v
+    dict_m_ren, dict_sce_plot_ren = {}, {}
+    try:
+        with open('saved_dictionary.pkl', 'rb') as f:
+            dict_m = pickle.load(f)
+        with open('sce_dictionary.pkl', 'rb') as f:
+            dict_sce_plot_f = pickle.load(f)
+        dict_m_ren = dict(dict_m)
+        for k, v in list(dict_m.items()):
+            rk = RENAME.get(k, k)
+            dict_m_ren[rk] = v
+        dict_sce_plot_ren = dict(dict_sce_plot_f)
+        for k, v in list(dict_sce_plot_f.items()):
+            rk = RENAME.get(k, k)
+            dict_sce_plot_ren[rk] = v
+    except Exception:
+        # Fallback to JSON artifacts to avoid pickle incompatibility on CI
+        dict_m_ren = _load_matches_json()
+        dict_sce_plot_ren = _load_scenarios_json()
     return dict_m_ren, dict_sce_plot_ren
 
 

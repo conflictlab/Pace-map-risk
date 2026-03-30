@@ -107,12 +107,36 @@ jobs:
           else
             echo "No newsletter changes to commit"
           fi
+          # Configure merge drivers so generated binaries auto-resolve during rebase
+          if [ -f scripts/ci-merge-driver-setup.sh ]; then
+            bash scripts/ci-merge-driver-setup.sh || true
+          else
+            git config merge.keepTheirs.name "Keep theirs (rebased commit)"
+            git config merge.keepTheirs.driver 'sh -c '\''cat "$3" > "$2"'\'' _ || true
+          fi
           # Rebase on latest main to avoid non-fast-forward push failures; autostash local mods
           git fetch origin main
           git config rebase.autoStash true
           if ! git pull --rebase origin main; then
-            echo "Rebase failed; aborting rebase and skipping push to avoid conflicts." >&2
-            git rebase --abort || true
-            exit 1
+            echo "Rebase failed; attempting auto-resolve for newsletter artifacts" >&2
+            if [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
+              # Prefer rebased commit's version for generated files
+              for f in $(git diff --name-only --diff-filter=U); do
+                case "$f" in
+                  Newsletters/*.pdf|assets/Report.pdf|assets/html_output/_pdf_images/*)
+                    git checkout --theirs -- "$f" || true ;;
+                  *) ;;
+                esac
+              done
+              git add -A
+              if ! git rebase --continue; then
+                echo "Rebase continue failed; aborting" >&2
+                git rebase --abort || true
+                exit 1
+              fi
+            else
+              echo "Not in rebase state; aborting" >&2
+              exit 1
+            fi
           fi
           git push origin HEAD:main

@@ -114,6 +114,9 @@ git reset --hard origin/main
 git config user.name  "pace-bot"
 git config user.email "pace-bot@users.noreply.github.com"
 
+# Ensure merge drivers are configured so rebases auto-accept generated artifacts
+"$(dirname "$0")/ci-merge-driver-setup.sh" || true
+
 for M in "${MONTHS[@]}"; do
   if $SKIP_EXISTING_H12 && has_h12 "$M"; then
     echo "[${M}] h12 already present, skipping (--skip-existing-h12)"
@@ -155,4 +158,3 @@ for M in "${MONTHS[@]}"; do
 done
 
 echo "All requested months processed."
-

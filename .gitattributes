@@ -3,3 +3,6 @@
 
 # Always keep our version of newsletter PDFs during merges
 Newsletters/*.pdf merge=ours
+
+# Keep our generated report PDF during merges
+assets/Report.pdf merge=ours

@@ -1,5 +1,5 @@
 {
-  "run_date": "2026-03-29T20:45:50.190475",
+  "run_date": "2026-03-30T13:33:00.172201",
   "data_end_date": "2026-02",
   "forecast_start_date": "2026-03",
   "h6_end_date": "2026-08",
@@ -7,6 +7,5 @@
   "training_window_months": 24,
   "historical_start_date": "1989-01",
   "historical_end_date": "2026-02",
-  "total_historical_months": 446,
-  "parallelization": "Matrix strategy with 4 chunks per horizon"
+  "total_historical_months": 446
 }

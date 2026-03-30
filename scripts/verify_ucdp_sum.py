@@ -14,12 +14,14 @@ import argparse
 import io
 import sys
 import urllib.request
+import hashlib
 import pandas as pd
 
 
-def fetch_candidate_csv(yy: int, m: int) -> pd.DataFrame:
+def fetch_candidate_csv(yy: int, m: int):
     url = f"https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{yy:02d}_0_{m}.csv"
     data = urllib.request.urlopen(url, timeout=60).read()
+    md5 = hashlib.md5(data).hexdigest()
     # Try a few pandas reader variants to handle delimiter quirks
     for kwargs in (
         {},
@@ -28,7 +30,8 @@ def fetch_candidate_csv(yy: int, m: int) -> pd.DataFrame:
         {"engine": "python", "sep": None},
     ):
         try:
-            return pd.read_csv(io.BytesIO(data), **kwargs)
+            df = pd.read_csv(io.BytesIO(data), **kwargs)
+            return df, url, md5
         except Exception:
             continue
     raise RuntimeError(f"Unable to parse candidate CSV: {url}")
@@ -66,8 +69,9 @@ def main():
 
     yy = args.year % 100
     m = args.month
-    df = fetch_candidate_csv(yy, m)
+    df, url, md5 = fetch_candidate_csv(yy, m)
     df = normalize_cols(df)
+    print(f"Fetched: {url}\nMD5: {md5}\nRows: {len(df)}")
 
     # Country matching (case-insensitive).
     # UCDP may use 'Iran (Islamic Republic of)'. Accept common variants for Iran.
@@ -86,11 +90,38 @@ def main():
     total = float(sub['best'].sum())
     print(f"UCDP candidate sum for {args.country} {args.year}-{args.month:02d} (best, start=end in month): {total:.0f}")
     print(f"Events counted: {len(sub)}")
+    # Debug: show top 10 events by 'best'
+    if len(sub):
+        top = sub.copy()
+        # include id if present
+        if 'id' in df.columns:
+            pass
+        top = top[['country','date_start','date_end','best']].sort_values('best', ascending=False).head(10)
+        print("\nTop events:")
+        for _, r in top.iterrows():
+            print(f"  {str(r['date_start'])[:10]} — best={int(r['best'])}")
+        # Group by violence type if available
+        if 'type_of_violence' in df.columns:
+            g = sub.groupby('type_of_violence')['best'].sum().sort_values(ascending=False)
+            print("\nSum by type_of_violence:")
+            print(g.to_string())
 
     # Also print a looser bound: any event that starts in target month/year
     looser = ds.loc[(ds['date_start'].dt.year == args.year) & (ds['date_start'].dt.month == args.month)]
     total_looser = float(looser['best'].sum())
     print(f"(Looser) sum for events starting in month: {total_looser:.0f} (events: {len(looser)})")
+
+    # Sanity: compare to Iraq same month to rule out mis-match
+    other = df[df['country'].astype(str).str.lower().eq('iraq')]
+    if len(other):
+        mask = (
+            (other['date_start'].dt.year == args.year) &
+            (other['date_end'].dt.year == args.year) &
+            (other['date_start'].dt.month == args.month) &
+            (other['date_end'].dt.month == args.month)
+        )
+        tot_other = float(other.loc[mask, 'best'].sum())
+        print(f"\nIraq {args.year}-{args.month:02d} (strict) best sum: {tot_other:.0f}")
 
 if __name__ == '__main__':
     try:
@@ -98,4 +129,3 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"ERROR: {e}")
         sys.exit(2)
-

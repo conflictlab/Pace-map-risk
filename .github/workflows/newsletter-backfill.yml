@@ -28,7 +28,7 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install 'numpy<2.0.0' pandas geopandas matplotlib seaborn reportlab
+          pip install 'numpy<2.0.0' pandas geopandas matplotlib seaborn reportlab dtaidistance scipy
 
       - name: Generate compute artifacts as-of period
         env:
@@ -46,7 +46,11 @@ jobs:
 
       - name: Build newsletter images from forecasts
         run: |
-          python scripts/newsletter_images_from_forecasts.py
+          if [ -f scripts/newsletter_images_thomas.py ]; then
+            python scripts/newsletter_images_thomas.py
+          else
+            python scripts/newsletter_images_from_forecasts.py
+          fi
 
       - name: Build newsletter PDF
         run: |

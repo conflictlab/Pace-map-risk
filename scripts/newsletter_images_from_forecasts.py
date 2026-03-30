@@ -14,6 +14,14 @@ from datetime import datetime
 from matplotlib import font_manager
 from matplotlib.cm import ScalarMappable
 import matplotlib.colors as mcolors
+from typing import Optional, List, Tuple
+
+try:
+    # Optional; only used for on-the-fly fallback computation of matches/scenarios
+    from shape import Shape, finder as _Finder
+except Exception:  # pragma: no cover
+    Shape = None
+    _Finder = None
 
 
 RENAME = {
@@ -242,6 +250,56 @@ def barplots_by_country(value_sum, hist6):
     plt.savefig('Images/sub2_i.png', bbox_inches='tight'); plt.close(fig)
 
 
+def _compute_fallback_matches(hist_df: pd.DataFrame, name: str, h_train: int = 10, h: int = 6) -> List[Tuple[float, pd.Series]]:
+    """Compute closest historical matches if pickles are missing.
+    Returns a list of (distance, series) pairs, best-first.
+    """
+    if Shape is None or _Finder is None:
+        return []
+    try:
+        # Use the country series
+        s = hist_df[name]
+        if s.tail(h_train).sum() == 0:
+            return []
+        sh = Shape(); sh.set_shape(s.tail(h_train))
+        # Exclude last h months from search space, mirroring forecast generation
+        F = _Finder(hist_df.iloc[:-h, :], sh)
+        F.find_patterns(min_d=0.1, select=True, metric='dtw', dtw_sel=2, min_mat=3, d_increase=0.05)
+        items = []
+        for it in getattr(F, 'sequences', [])[:10]:
+            # it expected like (series, dist, ...)
+            try:
+                series = it[0]; dist = float(it[1]) if len(it) > 1 else 0.0
+                if hasattr(series, 'values'):
+                    items.append((dist, series))
+            except Exception:
+                continue
+        items.sort(key=lambda x: x[0])
+        return items[:4]
+    except Exception:
+        return []
+
+
+def _compute_fallback_scenarios(hist_df: pd.DataFrame, name: str, df_conf: Optional[pd.DataFrame], h_train: int = 10, h: int = 6) -> Optional[pd.DataFrame]:
+    """Compute scenario trajectories if sce pickle missing, following generate_forecasts logic."""
+    if Shape is None or _Finder is None:
+        return None
+    try:
+        s = hist_df[name]
+        if s.tail(h_train).sum() == 0:
+            return None
+        sh = Shape(); sh.set_shape(s.tail(h_train))
+        F = _Finder(hist_df.iloc[:-h, :], sh)
+        F.find_patterns(min_d=0.1, select=True, metric='dtw', dtw_sel=2, min_mat=3, d_increase=0.05)
+        if df_conf is not None:
+            F.create_sce(df_conf, h)
+            sce_ts = F.val_sce
+            return sce_ts
+        return None
+    except Exception:
+        return None
+
+
 def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=None):
     # For each top-4 country, produce:
     #  - exN.png: last 10 months history
@@ -279,6 +337,15 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
                         scen_df = val[1] if isinstance(val, (list, tuple)) and len(val)>1 else None
                         if isinstance(scen_df, pd.DataFrame) and not scen_df.empty:
                             break
+            # If pickle missing, compute a quick fallback set of scenarios
+            if (not isinstance(scen_df, pd.DataFrame)) or scen_df is None or scen_df.empty:
+                try:
+                    df_conf = pd.read_csv('reg_coun.csv', index_col=0)
+                    # Align names with RENAME map
+                    df_conf = df_conf.rename(index=RENAME)
+                except Exception:
+                    df_conf = None
+                scen_df = _compute_fallback_scenarios(hist, name, df_conf=df_conf)
             if isinstance(scen_df, pd.DataFrame) and not scen_df.empty:
                 # pick top 3 scenarios by index if index numeric (probability); else by row means
                 try:
@@ -356,7 +423,30 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
             except Exception:
                 pass
         if not drawn:
-            # default: copy history panel if no matches
+            # Compute fallback matches on-the-fly if pickles missing or mismatched
+            try:
+                matches = _compute_fallback_matches(hist, name)
+                if matches:
+                    fig, axes = plt.subplots(2, 2, figsize=(12, 6))
+                    axes = axes.flatten()
+                    for j, (dist, series) in enumerate(matches):
+                        axp = axes[j]
+                        try:
+                            axp.plot(series.index, series.values, color='#808080', linestyle='-', linewidth=2, marker='o')
+                            axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
+                        except Exception:
+                            axp.plot(range(len(series)), list(series), color='#808080', linestyle='-', linewidth=2, marker='o')
+                            axp.set_title(f'Match {j+1} (d={dist:.2f})', fontsize=10, color='#808080')
+                        axp.set_frame_on(False)
+                        axp.set_xticks([]); axp.set_yticks([])
+                    for j in range(len(matches), 4):
+                        axes[j].axis('off')
+                    plt.tight_layout(); plt.savefig(f'Images/ex{idx}_all.png', bbox_inches='tight'); plt.close(fig)
+                    drawn = True
+            except Exception:
+                pass
+        if not drawn:
+            # default: copy history panel if still nothing
             try:
                 from PIL import Image
                 img = Image.open(f'Images/ex{idx}.png')

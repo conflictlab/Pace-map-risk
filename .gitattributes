@@ -1,8 +1,8 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# Prefer the rebased commit ("theirs") for generated binaries
-# During rebase, "theirs" refers to the commit being applied (our new artifacts).
-Newsletters/*.pdf merge=theirs
-assets/Report.pdf merge=theirs
-assets/html_output/_pdf_images/* merge=theirs
+# Prefer the rebased commit (custom driver) for generated binaries
+# During rebase, this keeps the new artifacts from the commit being applied.
+Newsletters/*.pdf merge=keepTheirs
+assets/Report.pdf merge=keepTheirs
+assets/html_output/_pdf_images/* merge=keepTheirs

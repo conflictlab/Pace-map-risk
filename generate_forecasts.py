@@ -357,8 +357,8 @@ def main():
     hist_full.to_csv('Hist.csv')
     print(f"   Saved Hist.csv with {len(hist_full)} months of data")
 
-    # Use extended training window (24 months instead of 10)
-    h_train = 24
+    # Use 10-month training window to match Thomas's newsletter panels
+    h_train = 10
 
     # Helper to attach YYYY-MM date column for horizons
     def attach_dates(df, start_year_month: str, periods: int):

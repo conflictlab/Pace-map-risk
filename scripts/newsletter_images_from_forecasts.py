@@ -35,6 +35,7 @@ RENAME = {
     'Zimbabwe (Rhodesia)': 'Zimbabwe',
     'Vietnam (North Vietnam)': 'Vietnam',
 }
+RENAME_REV = {v: k for k, v in RENAME.items()}
 
 
 def ensure_dirs():
@@ -258,6 +259,10 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
         ax.tick_params(axis='y', labelsize=25)
         ax.set_frame_on(False)
         plt.tight_layout(); plt.savefig(f'Images/ex{idx}.png', bbox_inches='tight'); plt.close(fig)
+        # Prepare name variants (renamed and original) for pickle lookups
+        name_variants = [name]
+        if name in RENAME_REV:
+            name_variants.append(RENAME_REV[name])
         # exN_sce: scenarios/forecast
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
         # history (last 10 months)
@@ -266,27 +271,33 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
         # Try scenario dictionary first
         plotted = False
         try:
-            if sce_dict and name in sce_dict:
-                scen_df = sce_dict[name][1] if isinstance(sce_dict[name], (list, tuple)) and len(sce_dict[name])>1 else None
-                if isinstance(scen_df, pd.DataFrame) and not scen_df.empty:
-                    # pick top 3 scenarios by index if index numeric (probability); else by row means
-                    try:
-                        order = list(pd.Series(scen_df.index).sort_values(ascending=False).index[:3])
-                        sel = scen_df.iloc[order, :]
-                    except Exception:
-                        sel = scen_df.iloc[:3, :]
-                    # rescale using recent history window
-                    if len(hx):
-                        hmin, hmax = float(hx.min()), float(hx.max())
-                        rng = (hmax - hmin) if (hmax - hmin) != 0 else 1.0
-                        rescaled = sel.apply(lambda s: s*(rng) + hmin)
-                    else:
-                        rescaled = sel.copy()
-                    # plot scenarios
-                    for i, (_, row) in enumerate(rescaled.iterrows()):
-                        xs = list(range(len(hx), len(hx) + len(row)))
-                        ax.plot(xs, row.values, linestyle='-', linewidth=2 if i==0 else 1.5, color='gray' if i>0 else '#df2226')
-                    plotted = True
+            scen_df = None
+            if sce_dict:
+                for nm in name_variants:
+                    if nm in sce_dict:
+                        val = sce_dict[nm]
+                        scen_df = val[1] if isinstance(val, (list, tuple)) and len(val)>1 else None
+                        if isinstance(scen_df, pd.DataFrame) and not scen_df.empty:
+                            break
+            if isinstance(scen_df, pd.DataFrame) and not scen_df.empty:
+                # pick top 3 scenarios by index if index numeric (probability); else by row means
+                try:
+                    order_idx = pd.Series(scen_df.index).sort_values(ascending=False).index[:3]
+                    sel = scen_df.iloc[order_idx, :]
+                except Exception:
+                    sel = scen_df.iloc[:3, :]
+                # rescale using recent history window
+                if len(hx):
+                    hmin, hmax = float(hx.min()), float(hx.max())
+                    rng = (hmax - hmin) if (hmax - hmin) != 0 else 1.0
+                    rescaled = sel.apply(lambda s: s*(rng) + hmin)
+                else:
+                    rescaled = sel.copy()
+                # plot scenarios
+                for i, (_, row) in enumerate(rescaled.iterrows()):
+                    xs = list(range(len(hx), len(hx) + len(row)))
+                    ax.plot(xs, row.values, linestyle='-', linewidth=2 if i==0 else 1.5, color='#df2226' if i==0 else 'gray')
+                plotted = True
         except Exception:
             pass
         # Fallback: simple forecast band from f6_min/max
@@ -307,15 +318,22 @@ def top4_details(hist, f6, f6_min, f6_max, top4, sce_dict=None, matches_dict=Non
 
         # exN_all: closest historical matches
         drawn = False
-        if matches_dict and name in matches_dict:
+        if matches_dict:
             try:
-                seqs = matches_dict[name]
+                seqs = None
+                for nm in name_variants:
+                    if nm in matches_dict:
+                        seqs = matches_dict[nm]
+                        break
                 # Expect list of [Series, distance]; pick up to 4 best
                 items = []
-                for it in seqs:
-                    if isinstance(it, (list, tuple)) and len(it)>=1 and hasattr(it[0],'values'):
-                        dist = float(it[1]) if (isinstance(it, (list, tuple)) and len(it)>1) else 0.0
-                        items.append((dist, it[0]))
+                if seqs is not None:
+                    for it in seqs:
+                        if isinstance(it, (list, tuple)) and len(it)>=1:
+                            series = it[0]
+                            if hasattr(series, 'values'):
+                                dist = float(it[1]) if (isinstance(it, (list, tuple)) and len(it)>1) else 0.0
+                                items.append((dist, series))
                 items.sort(key=lambda x: x[0])
                 panel = items[:4]
                 if panel:

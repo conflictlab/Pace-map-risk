@@ -331,6 +331,13 @@ def main():
     common_columns = df_tot_m.columns.intersection(df_conf.index)
     df_tot_m = df_tot_m.loc[:, common_columns]
 
+    # Drop trailing months with all zeros (UCDP data not yet released)
+    while len(df_tot_m) > 0 and df_tot_m.iloc[-1].sum() == 0:
+        dropped_month = df_tot_m.index[-1]
+        print(f"   ⚠️  Dropping {dropped_month.strftime('%Y-%m')} (all zeros - UCDP data not released)")
+        df_tot_m = df_tot_m.iloc[:-1]
+        last_month = df_tot_m.index[-1] if len(df_tot_m) > 0 else last_month
+
     # Validate data freshness
     data_end = df_tot_m.index[-1]
     expected_end = last_month

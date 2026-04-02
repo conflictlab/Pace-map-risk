@@ -132,6 +132,12 @@ df_tot_m = df_tot.resample('M').sum()
 last_month = NOW_DT.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
 df_tot_m = df_tot_m.loc[:last_month, :]
 
+# Drop trailing months with all zeros (UCDP data not yet released)
+while len(df_tot_m) > 0 and df_tot_m.iloc[-1].sum() == 0:
+    dropped_month = df_tot_m.index[-1]
+    print(f'⚠️  Dropping {dropped_month.strftime("%Y-%m")} (all zeros - UCDP data not released)')
+    df_tot_m = df_tot_m.iloc[:-1]
+
 # Save to CSV
 df_tot_m.to_csv('Conf.csv')
 

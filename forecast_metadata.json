@@ -1,12 +1,12 @@
 {
-  "run_date": "2026-04-02T10:41:34.631689",
-  "data_end_date": "2026-03",
-  "forecast_start_date": "2026-04",
-  "h6_end_date": "2026-09",
-  "h12_end_date": "2027-03",
+  "run_date": "2026-04-02T12:24:23.420671",
+  "data_end_date": "2026-02",
+  "forecast_start_date": "2026-03",
+  "h6_end_date": "2026-08",
+  "h12_end_date": "2027-02",
   "training_window_months": 24,
   "historical_start_date": "1989-01",
-  "historical_end_date": "2026-03",
-  "total_historical_months": 447,
+  "historical_end_date": "2026-02",
+  "total_historical_months": 446,
   "parallelization": "Matrix strategy with 4 chunks per horizon"
 }

@@ -31,26 +31,28 @@ def rename_countries(df):
 # Create Hist.csv
 print('Creating Hist.csv...')
 df_tot_m = pd.read_csv('data/Conf.csv', index_col=0, parse_dates=True)
+
+# Drop trailing months with all zeros (UCDP data not yet released)
+while len(df_tot_m) > 0 and df_tot_m.iloc[-1].sum() == 0:
+    dropped_month = df_tot_m.index[-1]
+    print(f'⚠️  Dropping {pd.Timestamp(dropped_month).strftime("%Y-%m")} (all zeros - UCDP data not released)')
+    df_tot_m = df_tot_m.iloc[:-1]
+
 hist_full = rename_countries(df_tot_m)
 hist_full.to_csv('Hist.csv')
 print(f'Saved Hist.csv with {len(hist_full)} months of data')
 
-# Create metadata (respect ASOF if provided)
-ASOF = os.environ.get('ASOF')
-try:
-    NOW_DT = datetime.strptime(ASOF + '-01', '%Y-%m-%d') if ASOF else datetime.now()
-except Exception:
-    NOW_DT = datetime.now()
-last_month = NOW_DT.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+# Create metadata (use actual data end from cleaned df_tot_m)
+data_end = pd.Timestamp(df_tot_m.index[-1])
 metadata = {
     'run_date': datetime.now().isoformat(),
-    'data_end_date': last_month.strftime('%Y-%m'),
-    'forecast_start_date': (pd.Timestamp(last_month) + pd.DateOffset(months=1)).strftime('%Y-%m'),
-    'h6_end_date': (pd.Timestamp(last_month) + pd.DateOffset(months=6)).strftime('%Y-%m'),
-    'h12_end_date': (pd.Timestamp(last_month) + pd.DateOffset(months=12)).strftime('%Y-%m'),
+    'data_end_date': data_end.strftime('%Y-%m'),
+    'forecast_start_date': (data_end + pd.DateOffset(months=1)).strftime('%Y-%m'),
+    'h6_end_date': (data_end + pd.DateOffset(months=6)).strftime('%Y-%m'),
+    'h12_end_date': (data_end + pd.DateOffset(months=12)).strftime('%Y-%m'),
     'training_window_months': 24,
     'historical_start_date': df_tot_m.index[0].strftime('%Y-%m'),
-    'historical_end_date': last_month.strftime('%Y-%m'),
+    'historical_end_date': data_end.strftime('%Y-%m'),
     'total_historical_months': len(df_tot_m),
     'parallelization': 'Matrix strategy with 4 chunks per horizon'
 }

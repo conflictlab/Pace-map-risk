@@ -109,7 +109,7 @@ GitHub Actions dispatch is also available for single months: `.github/workflows/
 
 ### Training Window
 
-The script uses an extended training window (`h_train = 24` months) for better pattern matching. This is configurable in `generate_forecasts.py`.
+The script uses a 10-month training window (`h_train = 10`) to align with Thomas's newsletter panels and improve scenario diversity. This is configurable in `generate_forecasts.py`.
 
 ### Forecast Horizons
 

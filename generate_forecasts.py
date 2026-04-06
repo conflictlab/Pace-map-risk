@@ -361,6 +361,8 @@ def main():
     # Save full historical data
     print("\n3. Saving historical data...")
     hist_full = rename_countries(df_tot_m)
+    # Format index as YYYY-MM instead of full timestamp
+    hist_full.index = hist_full.index.strftime('%Y-%m')
     hist_full.to_csv('Hist.csv')
     print(f"   Saved Hist.csv with {len(hist_full)} months of data")
 
@@ -386,13 +388,16 @@ def main():
     # Save 6-month outputs (with explicit date column YYYY-MM)
     forecast_start_str = (last_month + pd.DateOffset(months=1)).strftime('%Y-%m')
     attach_dates(results_h6['pred_df'], forecast_start_str, 6).to_csv('forecasts_h6.csv', index=False)
-    attach_dates(results_h6['pred_df_min'], forecast_start_str, 6).to_csv('forecasts_h6_min.csv', index=False)
+
+    # Clamp negative values to zero in min predictions
+    pred_df_min_clamped = results_h6['pred_df_min'].clip(lower=0)
+    attach_dates(pred_df_min_clamped, forecast_start_str, 6).to_csv('forecasts_h6_min.csv', index=False)
     attach_dates(results_h6['pred_df_max'], forecast_start_str, 6).to_csv('forecasts_h6_max.csv', index=False)
     results_h6['df_perc'].to_csv('perc_h6.csv')
 
     # Save backward compatible filenames for h=6 (also include date column)
     attach_dates(results_h6['pred_df'], forecast_start_str, 6).to_csv('Pred_df.csv', index=False)
-    attach_dates(results_h6['pred_df_min'], forecast_start_str, 6).to_csv('Pred_df_min.csv', index=False)
+    attach_dates(pred_df_min_clamped, forecast_start_str, 6).to_csv('Pred_df_min.csv', index=False)
     attach_dates(results_h6['pred_df_max'], forecast_start_str, 6).to_csv('Pred_df_max.csv', index=False)
     results_h6['df_perc'].to_csv('perc.csv')
     results_h6['df_next'][0].to_csv('dec.csv')
@@ -414,7 +419,10 @@ def main():
 
     # Save 12-month outputs (with explicit date column YYYY-MM)
     attach_dates(results_h12['pred_df'], forecast_start_str, 12).to_csv('forecasts_h12.csv', index=False)
-    attach_dates(results_h12['pred_df_min'], forecast_start_str, 12).to_csv('forecasts_h12_min.csv', index=False)
+
+    # Clamp negative values to zero in min predictions
+    pred_df_min_h12_clamped = results_h12['pred_df_min'].clip(lower=0)
+    attach_dates(pred_df_min_h12_clamped, forecast_start_str, 12).to_csv('forecasts_h12_min.csv', index=False)
     attach_dates(results_h12['pred_df_max'], forecast_start_str, 12).to_csv('forecasts_h12_max.csv', index=False)
     results_h12['df_perc'].to_csv('perc_h12.csv')
     results_h12['df_next'][0].to_csv('dec_h12.csv')

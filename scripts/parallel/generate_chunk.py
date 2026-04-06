@@ -50,7 +50,7 @@ if chunk_countries:
 df_tot_m_chunk = df_tot_m[chunk_countries]
 
 # Generate forecasts for this chunk
-results = generate_forecasts(df_tot_m_chunk, df_conf, h=horizon, h_train=24, output_suffix=f'_h{horizon}')
+results = generate_forecasts(df_tot_m_chunk, df_conf, h=horizon, h_train=10, output_suffix=f'_h{horizon}')
 
 # Save chunk results
 results['pred_df'].to_csv(f'forecasts_h{horizon}_chunk{chunk_id}.csv')

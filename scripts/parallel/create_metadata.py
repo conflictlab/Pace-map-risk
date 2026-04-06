@@ -50,7 +50,7 @@ metadata = {
     'forecast_start_date': (data_end + pd.DateOffset(months=1)).strftime('%Y-%m'),
     'h6_end_date': (data_end + pd.DateOffset(months=6)).strftime('%Y-%m'),
     'h12_end_date': (data_end + pd.DateOffset(months=12)).strftime('%Y-%m'),
-    'training_window_months': 24,
+    'training_window_months': 10,
     'historical_start_date': df_tot_m.index[0].strftime('%Y-%m'),
     'historical_end_date': data_end.strftime('%Y-%m'),
     'total_historical_months': len(df_tot_m),

@@ -40,7 +40,7 @@ for file_pattern in [
     if chunks:
         merged = pd.concat(chunks, axis=1)
         output_name = file_pattern.replace('_chunk', '').replace(f'perc_h{horizon}', 'perc' if horizon == 6 else f'perc_h{horizon}') + '.csv'
-        merged.to_csv(output_name)
+        merged.to_csv(output_name, index=False)
         print(f'Saved {output_name}')
 
 # Merge pickles
@@ -80,9 +80,19 @@ for file_pattern, output_name in pickle_patterns:
 
 # Create backward-compatible files for h=6
 if horizon == 6:
-    pd.read_csv(f'forecasts_h{horizon}.csv', index_col=0).to_csv('Pred_df.csv')
-    pd.read_csv(f'forecasts_h{horizon}_min.csv', index_col=0).to_csv('Pred_df_min.csv')
-    pd.read_csv(f'forecasts_h{horizon}_max.csv', index_col=0).to_csv('Pred_df_max.csv')
+    # Read without index_col since files now have date column
+    pred_df = pd.read_csv(f'forecasts_h{horizon}.csv')
+    pred_df_min = pd.read_csv(f'forecasts_h{horizon}_min.csv')
+    pred_df_max = pd.read_csv(f'forecasts_h{horizon}_max.csv')
+
+    # Clamp negative values in min file to zero
+    for col in pred_df_min.columns:
+        if col != 'date':
+            pred_df_min[col] = pred_df_min[col].clip(lower=0)
+
+    pred_df.to_csv('Pred_df.csv', index=False)
+    pred_df_min.to_csv('Pred_df_min.csv', index=False)
+    pred_df_max.to_csv('Pred_df_max.csv', index=False)
     print('Created backward-compatible files')
 
 print(f'h={horizon} merge complete!')

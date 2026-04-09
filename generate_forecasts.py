@@ -230,8 +230,139 @@ def main():
 
     # Load and process UCDP data
     print("\n1. Loading UCDP data...")
-    df = pd.read_csv("https://ucdp.uu.se/downloads/ged/ged251-csv.zip",
-                     parse_dates=['date_start', 'date_end'], low_memory=False)
+
+    # --- Helpers: robust HTTP + offline fallback ---
+    import io, time, tempfile
+    from typing import Optional
+    try:
+        import requests
+        from urllib3.util.retry import Retry
+        from requests.adapters import HTTPAdapter
+    except Exception:
+        requests = None
+        HTTPAdapter = None
+        Retry = None
+
+    def _session_with_retries(total: int = 5, backoff: float = 1.5) -> Optional["requests.Session"]:
+        if requests is None:
+            return None
+        s = requests.Session()
+        headers = {
+            'User-Agent': 'PaCE-Forecasts/1.0 (+https://github.com/conflictlab/Pace-map-risk)'
+        }
+        s.headers.update(headers)
+        if HTTPAdapter and Retry:
+            retry = Retry(total=total, backoff_factor=backoff,
+                          status_forcelist=(429, 500, 502, 503, 504),
+                          allowed_methods=("GET", "HEAD"))
+            adapter = HTTPAdapter(max_retries=retry, pool_maxsize=8)
+            s.mount('http://', adapter)
+            s.mount('https://', adapter)
+        return s
+
+    def _http_get(url: str, timeout=(10, 90)) -> bytes:
+        """Download URL with retries. Falls back to urllib if requests not available."""
+        last_err = None
+        # Prefer requests with retries if available
+        if requests is not None:
+            s = _session_with_retries()
+            for attempt in range(5):
+                try:
+                    r = s.get(url, timeout=timeout)
+                    r.raise_for_status()
+                    return r.content
+                except Exception as e:
+                    last_err = e
+                    time.sleep(1.5 * (attempt + 1))
+        # Fallback to urllib
+        import urllib.request
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(url, timeout=timeout[1] if isinstance(timeout, tuple) else timeout) as r:
+                    return r.read()
+            except Exception as e:
+                last_err = e
+                time.sleep(1.5 * (attempt + 1))
+        raise last_err if last_err else RuntimeError(f"Failed to download {url}")
+
+    def _read_csv_resilient(url: str, is_zip: bool = False, parse_dates=None):
+        data = _http_get(url)
+        bio = io.BytesIO(data)
+        kwargs = {}
+        if parse_dates is not None:
+            kwargs['parse_dates'] = parse_dates
+        if is_zip:
+            kwargs['compression'] = 'zip'
+        # Try a few variants to tolerate delimiter quirks
+        variants = [kwargs,
+                    {**kwargs, 'sep': ';'},
+                    {**kwargs, 'engine': 'python'},
+                    {**kwargs, 'engine': 'python', 'sep': None}]
+        for v in variants:
+            try:
+                bio.seek(0)
+                return pd.read_csv(bio, **v)
+            except Exception:
+                continue
+        # Last attempt: write to temp file and let pandas sniff
+        fd, tmp = tempfile.mkstemp(suffix='.csv' if not is_zip else '.zip')
+        os.close(fd)
+        with open(tmp, 'wb') as f:
+            f.write(data)
+        try:
+            return pd.read_csv(tmp, **kwargs)
+        finally:
+            try:
+                os.remove(tmp)
+            except Exception:
+                pass
+
+    def _load_hist_from_cache() -> Optional[pd.DataFrame]:
+        """Load historical monthly totals from existing files if present."""
+        candidates = ['Hist.csv', os.path.join('Historical_Predictions', 'Hist_latest.csv'), 'Conf.csv']
+        for p in candidates:
+            if os.path.exists(p):
+                try:
+                    dfh = pd.read_csv(p)
+                    # Hist.csv has 'date' column; Conf.csv typically has datetime index
+                    if 'date' in dfh.columns:
+                        dfh['date'] = pd.to_datetime(dfh['date'], format='%Y-%m', errors='coerce')
+                        dfh = dfh.dropna(subset=['date']).set_index('date')
+                    else:
+                        # Treat first column as index if unnamed
+                        idx_col = dfh.columns[0]
+                        dfh[idx_col] = pd.to_datetime(dfh[idx_col], errors='coerce')
+                        dfh = dfh.dropna(subset=[idx_col]).set_index(idx_col)
+                    # Ensure columns are in consistent order/types
+                    dfh = dfh.sort_index()
+                    print(f"   ✓ Loaded historical totals from cache: {p}")
+                    return dfh
+                except Exception:
+                    continue
+        return None
+
+    OFFLINE = os.environ.get('UCDP_OFFLINE', '').strip() in ('1', 'true', 'yes')
+    df = None
+    if OFFLINE:
+        cached = _load_hist_from_cache()
+        if cached is None:
+            raise RuntimeError("UCDP_OFFLINE=1 set but no Hist.csv/Hist_latest.csv/Conf.csv cache found")
+        # Convert cached monthly totals back to event-level-like DataFrame shape used downstream
+        # We will skip reconstructing events; instead, we continue with df_tot_m directly.
+        df_tot_m = cached
+    else:
+        try:
+            # Base GED (v25.1) as zip – resilient fetch
+            base_url = os.environ.get('UCDP_GED_BASE_URL', 'https://ucdp.uu.se/downloads/ged/ged251-csv.zip')
+            df = _read_csv_resilient(base_url, is_zip=True, parse_dates=['date_start', 'date_end'])
+        except Exception as e:
+            print(f"   ⚠️  Could not download base GED ({e}). Trying offline cache…")
+            cached = _load_hist_from_cache()
+            if cached is None:
+                raise
+            df_tot_m = cached
+    
+    month = datetime.now().strftime("%m")
     month = datetime.now().strftime("%m")
 
     if month == '01':
@@ -252,49 +383,54 @@ def main():
         raise
 
     current_year_loaded = 0
-    for i in range(1, int(month)):
-        try:
-            df_can = _read_candidate_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{major}_0_{i}.csv')
-            df_can.columns = df.columns
-            df_can['date_start'] = pd.to_datetime(df_can['date_start'])
-            df_can['date_end'] = pd.to_datetime(df_can['date_end'])
-            df_can = df_can.drop_duplicates()
-            df = pd.concat([df, df_can], axis=0)
-            current_year_loaded += 1
-            print(f"   ✓ Loaded v{major}_0_{i}.csv")
-        except Exception as e:
-            print(f"   ✗ Could not load v{major}_0_{i}.csv: {e}")
+    if df is not None:
+        for i in range(1, int(month)):
+            try:
+                url = f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{major}_0_{i}.csv'
+                df_can = _read_csv_resilient(url)
+                df_can.columns = df.columns
+                df_can['date_start'] = pd.to_datetime(df_can['date_start'])
+                df_can['date_end'] = pd.to_datetime(df_can['date_end'])
+                df_can = df_can.drop_duplicates()
+                df = pd.concat([df, df_can], axis=0)
+                current_year_loaded += 1
+                print(f"   ✓ Loaded v{major}_0_{i}.csv")
+            except Exception as e:
+                print(f"   ✗ Could not load v{major}_0_{i}.csv: {e}")
 
     # Backfill previous GED stream for the full prior year (e.g., 2025 -> v25_0_{1..12}.csv)
     prev_major = major - 1
     prev_year_loaded = 0
-    for i in range(1, 13):
-        try:
-            df_can = _read_candidate_csv(f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{prev_major}_0_{i}.csv')
-            df_can.columns = df.columns
-            df_can['date_start'] = pd.to_datetime(df_can['date_start'])
-            df_can['date_end'] = pd.to_datetime(df_can['date_end'])
-            df_can = df_can.drop_duplicates()
-            df = pd.concat([df, df_can], axis=0)
-            prev_year_loaded += 1
-            print(f"   ✓ Loaded v{prev_major}_0_{i}.csv")
-        except Exception as e:
-            print(f"   ✗ Could not load v{prev_major}_0_{i}.csv: {e}")
+    if df is not None:
+        for i in range(1, 13):
+            try:
+                url = f'https://ucdp.uu.se/downloads/candidateged/GEDEvent_v{prev_major}_0_{i}.csv'
+                df_can = _read_csv_resilient(url)
+                df_can.columns = df.columns
+                df_can['date_start'] = pd.to_datetime(df_can['date_start'])
+                df_can['date_end'] = pd.to_datetime(df_can['date_end'])
+                df_can = df_can.drop_duplicates()
+                df = pd.concat([df, df_can], axis=0)
+                prev_year_loaded += 1
+                print(f"   ✓ Loaded v{prev_major}_0_{i}.csv")
+            except Exception as e:
+                print(f"   ✗ Could not load v{prev_major}_0_{i}.csv: {e}")
 
-    print(f"\n   Summary: Loaded {current_year_loaded}/{int(month)-1} files for {major+2000}, {prev_year_loaded}/12 for {prev_major+2000}")
+    if df is not None:
+        print(f"\n   Summary: Loaded {current_year_loaded}/{int(month)-1} files for {major+2000}, {prev_year_loaded}/12 for {prev_major+2000}")
 
-    print("2. Processing data...")
-    df_tot = pd.DataFrame(columns=df.country.unique(),
-                         index=pd.date_range(df.date_start.min(), df.date_end.max()))
-    df_tot = df_tot.fillna(0)
-    for i in df.country.unique():
-        df_sub = df[df.country == i]
-        for j in range(len(df_sub)):
-            if df_sub.date_start.iloc[j].month == df_sub.date_end.iloc[j].month:
-                df_tot.loc[df_sub.date_start.iloc[j], i] = \
-                    df_tot.loc[df_sub.date_start.iloc[j], i] + df_sub.best.iloc[j]
+        print("2. Processing data...")
+        df_tot = pd.DataFrame(columns=df.country.unique(),
+                             index=pd.date_range(df.date_start.min(), df.date_end.max()))
+        df_tot = df_tot.fillna(0)
+        for i in df.country.unique():
+            df_sub = df[df.country == i]
+            for j in range(len(df_sub)):
+                if df_sub.date_start.iloc[j].month == df_sub.date_end.iloc[j].month:
+                    df_tot.loc[df_sub.date_start.iloc[j], i] = \
+                        df_tot.loc[df_sub.date_start.iloc[j], i] + df_sub.best.iloc[j]
 
-    df_tot_m = df_tot.resample(MONTHLY_FREQ).sum()
+        df_tot_m = df_tot.resample(MONTHLY_FREQ).sum()
     # Support backfill via --asof YYYY-MM or env ASOF=YYYY-MM
     asof = None
     for i, a in enumerate(sys.argv):
@@ -361,9 +497,11 @@ def main():
     # Save full historical data
     print("\n3. Saving historical data...")
     hist_full = rename_countries(df_tot_m)
-    # Format index as YYYY-MM instead of full timestamp
-    hist_full.index = hist_full.index.strftime('%Y-%m')
-    hist_full.to_csv('Hist.csv')
+    # Format index as YYYY-MM instead of full timestamp and convert to column
+    hist_full = hist_full.reset_index()
+    hist_full['index'] = pd.to_datetime(hist_full['index']).dt.strftime('%Y-%m')
+    hist_full = hist_full.rename(columns={'index': 'date'})
+    hist_full.to_csv('Hist.csv', index=False)
     print(f"   Saved Hist.csv with {len(hist_full)} months of data")
 
     # Use 10-month training window to match Thomas's newsletter panels
@@ -393,16 +531,16 @@ def main():
     pred_df_min_clamped = results_h6['pred_df_min'].clip(lower=0)
     attach_dates(pred_df_min_clamped, forecast_start_str, 6).to_csv('forecasts_h6_min.csv', index=False)
     attach_dates(results_h6['pred_df_max'], forecast_start_str, 6).to_csv('forecasts_h6_max.csv', index=False)
-    results_h6['df_perc'].to_csv('perc_h6.csv')
+    results_h6['df_perc'].to_csv('perc_h6.csv', index=False)
 
     # Save backward compatible filenames for h=6 (also include date column)
     attach_dates(results_h6['pred_df'], forecast_start_str, 6).to_csv('Pred_df.csv', index=False)
     attach_dates(pred_df_min_clamped, forecast_start_str, 6).to_csv('Pred_df_min.csv', index=False)
     attach_dates(results_h6['pred_df_max'], forecast_start_str, 6).to_csv('Pred_df_max.csv', index=False)
-    results_h6['df_perc'].to_csv('perc.csv')
-    results_h6['df_next'][0].to_csv('dec.csv')
-    results_h6['df_next'][1].to_csv('sta.csv')
-    results_h6['df_next'][2].to_csv('inc.csv')
+    results_h6['df_perc'].to_csv('perc.csv', index=False)
+    results_h6['df_next'][0].to_csv('dec.csv', index=False)
+    results_h6['df_next'][1].to_csv('sta.csv', index=False)
+    results_h6['df_next'][2].to_csv('inc.csv', index=False)
 
     with open('saved_dictionary.pkl', 'wb') as f:
         pickle.dump(results_h6['dict_m'], f)
@@ -424,10 +562,10 @@ def main():
     pred_df_min_h12_clamped = results_h12['pred_df_min'].clip(lower=0)
     attach_dates(pred_df_min_h12_clamped, forecast_start_str, 12).to_csv('forecasts_h12_min.csv', index=False)
     attach_dates(results_h12['pred_df_max'], forecast_start_str, 12).to_csv('forecasts_h12_max.csv', index=False)
-    results_h12['df_perc'].to_csv('perc_h12.csv')
-    results_h12['df_next'][0].to_csv('dec_h12.csv')
-    results_h12['df_next'][1].to_csv('sta_h12.csv')
-    results_h12['df_next'][2].to_csv('inc_h12.csv')
+    results_h12['df_perc'].to_csv('perc_h12.csv', index=False)
+    results_h12['df_next'][0].to_csv('dec_h12.csv', index=False)
+    results_h12['df_next'][1].to_csv('sta_h12.csv', index=False)
+    results_h12['df_next'][2].to_csv('inc_h12.csv', index=False)
 
     with open('dict_sce_h12.pkl', 'wb') as f:
         pickle.dump(results_h12['dict_sce'], f)

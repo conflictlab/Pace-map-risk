@@ -508,8 +508,16 @@ def main():
     hist_full = rename_countries(df_tot_m)
     # Format index as YYYY-MM instead of full timestamp and convert to column
     hist_full = hist_full.reset_index()
-    hist_full['index'] = pd.to_datetime(hist_full['index']).dt.strftime('%Y-%m')
-    hist_full = hist_full.rename(columns={'index': 'date'})
+    # Determine the index column name robustly (could be 'date' if index was named)
+    idx_col = 'index'
+    if 'index' not in hist_full.columns:
+        if 'date' in hist_full.columns:
+            idx_col = 'date'
+        else:
+            idx_col = hist_full.columns[0]
+    hist_full[idx_col] = pd.to_datetime(hist_full[idx_col]).dt.strftime('%Y-%m')
+    if idx_col != 'date':
+        hist_full = hist_full.rename(columns={idx_col: 'date'})
     hist_full.to_csv('Hist.csv', index=False)
     print(f"   Saved Hist.csv with {len(hist_full)} months of data")
 

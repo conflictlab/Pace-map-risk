@@ -436,11 +436,11 @@ jobs:
           git config user.name  "github-actions"
           git config user.email "github-actions@users.noreply.github.com"
           TMPDIR="${RUNNER_TEMP:-/tmp}"
-          SRC_H6="Historical_Predictions/${{ matrix.month }}_h6.csv"
-          SRC_H12="Historical_Predictions/${{ matrix.month }}_h12.csv"
           # Save current month's files to temp (if present)
-          [ -f "$SRC_H6" ]  && cp -f "$SRC_H6"  "$TMPDIR/h6_${{ matrix.month }}.csv"
-          [ -f "$SRC_H12" ] && cp -f "$SRC_H12" "$TMPDIR/h12_${{ matrix.month }}.csv"
+          for f in h6 h6_min h6_max h12 h12_min h12_max Hist; do
+            SRC="Historical_Predictions/${{ matrix.month }}_${f}.csv"
+            [ -f "$SRC" ] && cp -f "$SRC" "$TMPDIR/${f}_${{ matrix.month }}.csv"
+          done
           # Prepare a clean worktree at origin/main to avoid any local conflicts
           git fetch origin main
           ARCH_DIR="${{ runner.temp }}/archive-worktree"
@@ -449,12 +449,12 @@ jobs:
           mkdir -p "$ARCH_DIR/Historical_Predictions"
           # Restore files into clean worktree
           changed=0
-          if [ -f "$TMPDIR/h6_${{ matrix.month }}.csv" ]; then
-            cp -f "$TMPDIR/h6_${{ matrix.month }}.csv" "$ARCH_DIR/Historical_Predictions/${{ matrix.month }}_h6.csv"; changed=1
-          fi
-          if [ -f "$TMPDIR/h12_${{ matrix.month }}.csv" ]; then
-            cp -f "$TMPDIR/h12_${{ matrix.month }}.csv" "$ARCH_DIR/Historical_Predictions/${{ matrix.month }}_h12.csv"; changed=1
-          fi
+          for f in h6 h6_min h6_max h12 h12_min h12_max Hist; do
+            if [ -f "$TMPDIR/${f}_${{ matrix.month }}.csv" ]; then
+              cp -f "$TMPDIR/${f}_${{ matrix.month }}.csv" "$ARCH_DIR/Historical_Predictions/${{ matrix.month }}_${f}.csv"
+              changed=1
+            fi
+          done
           if [ "$changed" -eq 0 ]; then
             echo "No archived changes to commit for ${{ matrix.month }}"
             git worktree remove "$ARCH_DIR" --force
@@ -462,9 +462,8 @@ jobs:
           fi
           # Commit from the clean worktree
           pushd "$ARCH_DIR" >/dev/null
-          git add Historical_Predictions/${{ matrix.month }}_h6.csv 2>/dev/null || true
-          git add Historical_Predictions/${{ matrix.month }}_h12.csv 2>/dev/null || true
-          git commit -m "chore(archive): add ${{ matrix.month }} h6/h12 snapshots to Historical_Predictions (parallel backfill)" || true
+          git add Historical_Predictions/${{ matrix.month }}_*.csv 2>/dev/null || true
+          git commit -m "chore(archive): add ${{ matrix.month }} forecasts (h6/h12 + min/max + Hist) to Historical_Predictions (parallel backfill)" || true
           git push origin HEAD:main
           popd >/dev/null
           git worktree remove "$ARCH_DIR" --force

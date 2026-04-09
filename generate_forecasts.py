@@ -450,8 +450,17 @@ def main():
     last_month = now_dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
     df_tot_m = df_tot_m.loc[:last_month, :]
     df_tot_m.to_csv('Conf.csv')
-    del df
-    del df_tot
+    # Clean up large intermediates only if they exist (offline mode may skip them)
+    try:
+        if 'df' in locals() and df is not None:
+            del df
+    except Exception:
+        pass
+    try:
+        if 'df_tot' in locals():
+            del df_tot
+    except Exception:
+        pass
 
     df_conf = pd.read_csv('reg_coun.csv', index_col=0)
     # Normalize country names on both sides to avoid dropping countries like Russia

@@ -12,6 +12,12 @@ on:
         default: 'archive'
 
 jobs:
+  # Ensure only one backfill runs at a time to avoid push conflicts
+  # across multiple months dispatched concurrently.
+  # This serializes runs for this workflow.
+  concurrency:
+    group: newsletter-backfill
+    cancel-in-progress: false
   backfill:
     runs-on: ubuntu-latest
     permissions:

@@ -27,6 +27,41 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Fast-path from archive if available
+        id: fastpath
+        run: |
+          set -euo pipefail
+          period="${{ inputs.period }}"
+          used=false
+          # If archived snapshots for the period exist, use them directly
+          if [ -f "Historical_Predictions/${period}_h6.csv" ]; then
+            cp -f "Historical_Predictions/${period}_h6.csv" forecasts_h6.csv
+            # Optionally copy min/max if present
+            [ -f "Historical_Predictions/${period}_h6_min.csv" ] && cp -f "Historical_Predictions/${period}_h6_min.csv" forecasts_h6_min.csv || true
+            [ -f "Historical_Predictions/${period}_h6_max.csv" ] && cp -f "Historical_Predictions/${period}_h6_max.csv" forecasts_h6_max.csv || true
+            # Hist snapshot (if present)
+            if [ -f "Historical_Predictions/${period}_Hist.csv" ]; then
+              cp -f "Historical_Predictions/${period}_Hist.csv" Hist.csv
+            fi
+            # Write minimal metadata so downstream steps work
+            python - <<'PY'
+import json, os
+from datetime import datetime
+p=os.environ.get('PERIOD') or '${{ inputs.period }}'
+meta={
+  'run_date': datetime.utcnow().isoformat(),
+  'data_end_date': p,
+  'forecast_start_date': p,
+}
+open('forecast_metadata.json','w').write(json.dumps(meta, indent=2))
+print('Wrote forecast_metadata.json for period', p)
+PY
+            used=true
+          fi
+          echo "used=${used}" >> "$GITHUB_OUTPUT"
+        env:
+          PERIOD: ${{ inputs.period }}
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -38,10 +73,14 @@ jobs:
           pip install 'numpy<2.0.0' pandas geopandas matplotlib seaborn reportlab dtaidistance scipy
 
       - name: Generate compute artifacts as-of period
+        if: steps.fastpath.outputs.used != 'true'
         env:
           ASOF: ${{ inputs.period }}
           # Use offline mode to avoid flaky UCDP network downloads during backfills
           UCDP_OFFLINE: '1'
+          # Speed up by skipping h=12 and pickle artifacts
+          SKIP_H12: '1'
+          SKIP_PKL: '1'
         run: |
           # Run generator as-of period to produce Hist.csv and forecasts_h6.csv
           python generate_forecasts.py

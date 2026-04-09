@@ -536,6 +536,10 @@ def main():
         out.insert(0, 'date', dates)
         return out
 
+    # Read optional fast-path flags from environment
+    skip_h12 = str(os.environ.get('SKIP_H12', '')).lower() in ('1','true','yes')
+    skip_pickle = str(os.environ.get('SKIP_PKL', os.environ.get('SKIP_PICKLE', ''))).lower() in ('1','true','yes')
+
     # Generate 6-month forecasts
     print("\n4. Generating 6-month forecasts...")
     results_h6 = generate_forecasts(df_tot_m, df_conf, h=6, h_train=h_train, output_suffix='_h6')
@@ -559,37 +563,42 @@ def main():
     results_h6['df_next'][1].to_csv('sta.csv', index=False)
     results_h6['df_next'][2].to_csv('inc.csv', index=False)
 
-    with open('saved_dictionary.pkl', 'wb') as f:
-        pickle.dump(results_h6['dict_m'], f)
-    with open('dict_sce.pkl', 'wb') as f:
-        pickle.dump(results_h6['dict_sce'], f)
-    with open('sce_dictionary.pkl', 'wb') as f:
-        pickle.dump(results_h6['dict_sce_plot'], f)
+    if not skip_pickle:
+        with open('saved_dictionary.pkl', 'wb') as f:
+            pickle.dump(results_h6['dict_m'], f)
+        with open('dict_sce.pkl', 'wb') as f:
+            pickle.dump(results_h6['dict_sce'], f)
+        with open('sce_dictionary.pkl', 'wb') as f:
+            pickle.dump(results_h6['dict_sce_plot'], f)
 
     print("   ✓ Saved 6-month forecasts")
 
-    # Generate 12-month forecasts
-    print("\n5. Generating 12-month forecasts...")
-    results_h12 = generate_forecasts(df_tot_m, df_conf, h=12, h_train=h_train, output_suffix='_h12')
+    if not skip_h12:
+        # Generate 12-month forecasts
+        print("\n5. Generating 12-month forecasts...")
+        results_h12 = generate_forecasts(df_tot_m, df_conf, h=12, h_train=h_train, output_suffix='_h12')
 
-    # Save 12-month outputs (with explicit date column YYYY-MM)
-    attach_dates(results_h12['pred_df'], forecast_start_str, 12).to_csv('forecasts_h12.csv', index=False)
+        # Save 12-month outputs (with explicit date column YYYY-MM)
+        attach_dates(results_h12['pred_df'], forecast_start_str, 12).to_csv('forecasts_h12.csv', index=False)
 
-    # Clamp negative values to zero in min predictions
-    pred_df_min_h12_clamped = results_h12['pred_df_min'].clip(lower=0)
-    attach_dates(pred_df_min_h12_clamped, forecast_start_str, 12).to_csv('forecasts_h12_min.csv', index=False)
-    attach_dates(results_h12['pred_df_max'], forecast_start_str, 12).to_csv('forecasts_h12_max.csv', index=False)
-    results_h12['df_perc'].to_csv('perc_h12.csv', index=False)
-    results_h12['df_next'][0].to_csv('dec_h12.csv', index=False)
-    results_h12['df_next'][1].to_csv('sta_h12.csv', index=False)
-    results_h12['df_next'][2].to_csv('inc_h12.csv', index=False)
+        # Clamp negative values to zero in min predictions
+        pred_df_min_h12_clamped = results_h12['pred_df_min'].clip(lower=0)
+        attach_dates(pred_df_min_h12_clamped, forecast_start_str, 12).to_csv('forecasts_h12_min.csv', index=False)
+        attach_dates(results_h12['pred_df_max'], forecast_start_str, 12).to_csv('forecasts_h12_max.csv', index=False)
+        results_h12['df_perc'].to_csv('perc_h12.csv', index=False)
+        results_h12['df_next'][0].to_csv('dec_h12.csv', index=False)
+        results_h12['df_next'][1].to_csv('sta_h12.csv', index=False)
+        results_h12['df_next'][2].to_csv('inc_h12.csv', index=False)
 
-    with open('dict_sce_h12.pkl', 'wb') as f:
-        pickle.dump(results_h12['dict_sce'], f)
-    with open('sce_dictionary_h12.pkl', 'wb') as f:
-        pickle.dump(results_h12['dict_sce_plot'], f)
+        if not skip_pickle:
+            with open('dict_sce_h12.pkl', 'wb') as f:
+                pickle.dump(results_h12['dict_sce'], f)
+            with open('sce_dictionary_h12.pkl', 'wb') as f:
+                pickle.dump(results_h12['dict_sce_plot'], f)
 
-    print("   ✓ Saved 12-month forecasts")
+        print("   ✓ Saved 12-month forecasts")
+    else:
+        print("\n5. Skipping 12-month forecasts (SKIP_H12=1)")
 
     # Create metadata file
     print("\n6. Creating metadata...")

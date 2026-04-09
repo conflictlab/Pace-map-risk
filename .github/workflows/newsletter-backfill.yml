@@ -36,6 +36,8 @@ jobs:
       - name: Generate compute artifacts as-of period
         env:
           ASOF: ${{ inputs.period }}
+          # Use offline mode to avoid flaky UCDP network downloads during backfills
+          UCDP_OFFLINE: '1'
         run: |
           # Run generator as-of period to produce Hist.csv and forecasts_h6.csv
           python generate_forecasts.py

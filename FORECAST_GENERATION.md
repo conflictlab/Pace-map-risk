@@ -82,6 +82,13 @@ python generate_forecasts.py
 python scripts/prepare_historical_predictions.py
 ```
 
+If the UCDP site is temporarily unreachable (timeouts), you can force offline mode
+to reuse the repository's existing historical cache (`Hist.csv`/`Conf.csv`) by setting:
+
+```bash
+UCDP_OFFLINE=1 python generate_forecasts.py
+```
+
 ### Backfilling Past Months (h6 + h12)
 
 To re-generate archived months (including h12) without altering the model, run the generator as-of each month and prepare outputs. A helper script is provided:
@@ -102,6 +109,8 @@ Notes:
 - The script uses `ASOF=YYYY-MM python generate_forecasts.py`, then runs `scripts/prepare_historical_predictions.py`.
 - It commits each month and pushes via a hardened git flow (autostash rebase).
 - Requires Python deps installed and `UCDP_API_TOKEN` in env if needed.
+  To avoid network flakiness when backfilling via Actions, the workflow uses `UCDP_OFFLINE=1`
+  so it relies on the repository's cached historical data. You can do the same locally if needed.
 
 GitHub Actions dispatch is also available for single months: `.github/workflows/backfill-month-parallel.yml` (input `asof=YYYY-MM`).
 
@@ -162,7 +171,9 @@ https://conflictlab.github.io/data/forecasts/latest/metadata.json
 ### GitHub Actions Failures
 
 Check the Actions tab for detailed logs. Common issues:
-- UCDP data source temporarily unavailable (will retry next month)
+- UCDP data source temporarily unavailable or timing out
+- The forecast generator now performs HTTP retries/backoff for UCDP downloads
+- When needed, set `UCDP_OFFLINE=1` to rely on the repo's cached `Hist.csv`/`Conf.csv`
 - Insufficient historical data for pattern matching
 - Memory issues (increase timeout or resources)
 

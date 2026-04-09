@@ -36,7 +36,12 @@ def main():
     # Map of input files to archive names
     pairs = [
         (ROOT / 'forecasts_h6.csv', out_dir / f'{period}_h6.csv'),
+        (ROOT / 'forecasts_h6_min.csv', out_dir / f'{period}_h6_min.csv'),
+        (ROOT / 'forecasts_h6_max.csv', out_dir / f'{period}_h6_max.csv'),
         (ROOT / 'forecasts_h12.csv', out_dir / f'{period}_h12.csv'),
+        (ROOT / 'forecasts_h12_min.csv', out_dir / f'{period}_h12_min.csv'),
+        (ROOT / 'forecasts_h12_max.csv', out_dir / f'{period}_h12_max.csv'),
+        (ROOT / 'Hist.csv', out_dir / f'{period}_Hist.csv'),
     ]
     for src, dst in pairs:
         if src.exists():

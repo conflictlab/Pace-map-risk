@@ -1,5 +1,6 @@
 name: Newsletter Backfill (by period)
 
+# Manual dispatch for archive-only newsletter generation
 on:
   workflow_dispatch:
     inputs:

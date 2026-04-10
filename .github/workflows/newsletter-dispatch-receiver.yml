@@ -1,0 +1,34 @@
+name: Newsletter Dispatch Receiver
+
+on:
+  repository_dispatch:
+    types:
+      - newsletter_backfill
+      - newsletter_backfill_archive
+
+jobs:
+  dispatch-to-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine target workflow
+        id: target
+        run: |
+          event_type="${{ github.event.action }}"
+          if [ "$event_type" = "newsletter_backfill_archive" ]; then
+            echo "workflow_file=.github/workflows/newsletter-backfill-archive.yml" >> $GITHUB_OUTPUT
+          else
+            echo "workflow_file=.github/workflows/newsletter-backfill.yml" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Dispatch to newsletter backfill workflow
+        run: |
+          period='${{ github.event.client_payload.period }}'
+          [ -z "$period" ] && { echo "Missing period in client_payload" >&2; exit 1; }
+
+          echo "Triggering newsletter backfill for period: $period"
+          gh workflow run ${{ steps.target.outputs.workflow_file }} \
+            -R ${{ github.repository }} \
+            -f period=$period \
+            --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}

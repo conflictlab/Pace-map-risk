@@ -64,20 +64,21 @@ jobs:
             python pdf.py || true
           fi
           if ! ls Newsletter_*.pdf >/dev/null 2>&1; then
-            # Fallback placeholder
-            python - <<'PY'
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from datetime import datetime
-ts=datetime.utcnow().strftime('%B %Y')
-fn=f'Newsletter_{ts}.pdf'
-c=canvas.Canvas(fn,pagesize=letter)
-c.setFont('Helvetica',20)
-c.drawString(72,720,f'PaCE Newsletter - {ts}')
-c.setFont('Helvetica',12)
-c.drawString(72,690,'Placeholder PDF (pdf.py failed)')
-c.showPage(); c.save(); print(fn)
-PY
+            # Fallback placeholder - write Python script to file then execute
+            cat > /tmp/gen_placeholder.py << 'PYSCRIPT'
+            from reportlab.lib.pagesizes import letter
+            from reportlab.pdfgen import canvas
+            from datetime import datetime
+            ts=datetime.utcnow().strftime('%B %Y')
+            fn=f'Newsletter_{ts}.pdf'
+            c=canvas.Canvas(fn,pagesize=letter)
+            c.setFont('Helvetica',20)
+            c.drawString(72,720,f'PaCE Newsletter - {ts}')
+            c.setFont('Helvetica',12)
+            c.drawString(72,690,'Placeholder PDF (pdf.py failed)')
+            c.showPage(); c.save(); print(fn)
+            PYSCRIPT
+            python /tmp/gen_placeholder.py
           fi
           ls -la Newsletter_*.pdf || true
 

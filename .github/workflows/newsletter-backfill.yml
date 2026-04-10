@@ -44,18 +44,10 @@ jobs:
               cp -f "Historical_Predictions/${period}_Hist.csv" Hist.csv
             fi
             # Write minimal metadata so downstream steps work
-            python - <<'PY'
-import json, os
-from datetime import datetime
-p=os.environ.get('PERIOD') or '${{ inputs.period }}'
-meta={
-  'run_date': datetime.utcnow().isoformat(),
-  'data_end_date': p,
-  'forecast_start_date': p,
-}
-open('forecast_metadata.json','w').write(json.dumps(meta, indent=2))
-print('Wrote forecast_metadata.json for period', p)
-PY
+            period='${{ inputs.period }}'
+            now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            printf '{"run_date": "%s", "data_end_date": "%s", "forecast_start_date": "%s"}\n' "$now" "$period" "$period" > forecast_metadata.json
+            echo "Wrote forecast_metadata.json for period $period"
             used=true
           fi
           echo "used=${used}" >> "$GITHUB_OUTPUT"

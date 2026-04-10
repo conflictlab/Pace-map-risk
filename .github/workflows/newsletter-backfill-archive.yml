@@ -7,12 +7,11 @@ on:
         description: Forecast start period (YYYY-MM)
         required: true
 
-concurrency:
-  group: newsletter-backfill-archive
-  cancel-in-progress: false
-
 jobs:
   backfill:
+    concurrency:
+      group: newsletter-backfill-archive
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: write

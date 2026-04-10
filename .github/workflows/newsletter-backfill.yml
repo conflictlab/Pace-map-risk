@@ -11,12 +11,11 @@ on:
         required: false
         default: 'archive'
 
-concurrency:
-  group: newsletter-backfill
-  cancel-in-progress: false
-
 jobs:
   backfill:
+    concurrency:
+      group: newsletter-backfill
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: write

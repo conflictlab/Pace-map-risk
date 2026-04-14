@@ -24,18 +24,34 @@ import os
 poppins_bold_path = 'Poppins/Poppins-Bold.ttf'  # Replace with your font file path
 poppins_regular_path = 'Poppins/Poppins-Regular.ttf'  # Replace with your font file path
 
-# Register the Poppins font
-pdfmetrics.registerFont(TTFont('Poppins-Bold', poppins_bold_path))
-pdfmetrics.registerFont(TTFont('Poppins', poppins_regular_path))
+# Register the Poppins font (skip if files don't exist)
+try:
+    pdfmetrics.registerFont(TTFont('Poppins-Bold', poppins_bold_path))
+    pdfmetrics.registerFont(TTFont('Poppins', poppins_regular_path))
+except:
+    pass  # Fall back to default fonts if Poppins not available
 
-month = datetime.now().strftime("%B")
-year = datetime.now().strftime("%Y")
-teasing = date.today() + relativedelta(months=+1)
+# Check if running for a specific period (e.g., during backfill)
+newsletter_period = os.environ.get('NEWSLETTER_PERIOD')
+if newsletter_period:
+    # Parse YYYY-MM format
+    parts = newsletter_period.split('-')
+    if len(parts) == 2:
+        year_str, month_str = parts
+        base_date = date(int(year_str), int(month_str), 1)
+    else:
+        base_date = date.today()
+else:
+    base_date = date.today()
+
+month = base_date.strftime("%B")
+year = base_date.strftime("%Y")
+teasing = base_date + relativedelta(months=+1)
 month_t = teasing.strftime("%B")
 s_month_t = teasing.strftime("%b")
 year_t = teasing.strftime("%Y")
-month_s = datetime.now().strftime("%b")
-six_months = date.today() + relativedelta(months=+5)
+month_s = base_date.strftime("%b")
+six_months = base_date + relativedelta(months=+5)
 sm_m = six_months.strftime("%b")
 sm_y = six_months.strftime("%Y")
 

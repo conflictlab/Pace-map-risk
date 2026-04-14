@@ -28,10 +28,16 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install minimal deps
+      - name: Install system dependencies for PDF processing
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install 'numpy<2.0.0' 'pandas>=1.4.0,<2.0.0' matplotlib seaborn reportlab dtaidistance scipy geopandas || true
+          pip install 'numpy<2.0.0'
+          pip install 'pandas>=1.4.0,<2.0.0' reportlab weasyprint geopandas matplotlib seaborn dtaidistance scipy || true
 
       - name: Stage archived forecasts for ${{ inputs.period }}
         run: |
@@ -58,6 +64,8 @@ jobs:
           fi
 
       - name: Build newsletter PDF
+        env:
+          NEWSLETTER_PERIOD: ${{ inputs.period }}
         run: |
           ts=$(date -u -d "${{ inputs.period }}-01" +"%B %Y" 2>/dev/null || date -u +"%B %Y")
           if [ -f pdf.py ]; then

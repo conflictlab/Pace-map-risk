@@ -616,17 +616,30 @@ class finder():
                 deca.append(last_date.year)
                 scale.append(somme)
         tot_seq=pd.DataFrame(pred_seq)
-        linkage_matrix = linkage(tot_seq, method='ward')
-        clusters = fcluster(linkage_matrix, horizon/2, criterion='distance')
+        # A long horizon can leave no historical continuations (or just one).
+        # Scenario clustering is supplementary to the forecast itself, so do
+        # not abort the full forecast run when there is nothing to cluster.
+        if tot_seq.empty:
+            self.sce = pd.DataFrame(columns=["Sce", "Region", "Decade", "Scale"])
+            self.val_sce = pd.DataFrame(columns=range(horizon))
+            return
+
+        if len(tot_seq) == 1:
+            clusters = np.ones(1, dtype=int)
+        else:
+            linkage_matrix = linkage(tot_seq, method='ward')
+            clusters = fcluster(linkage_matrix, horizon/2, criterion='distance')
         if len(pd.Series(clusters).value_counts())>7:
             sub_norm = tot_seq[(tot_seq > 2).any(axis=1)].index
             tot_seq_c = tot_seq.copy()
             tot_seq_c.loc[sub_norm,:] = 10
-            linkage_matrix = linkage(tot_seq_c, method='ward')
-            clusters = fcluster(linkage_matrix, horizon/2, criterion='distance')
+            if len(tot_seq_c) > 1:
+                linkage_matrix = linkage(tot_seq_c, method='ward')
+                clusters = fcluster(linkage_matrix, horizon/2, criterion='distance')
         if len(pd.Series(clusters).value_counts())>7:
-            linkage_matrix = linkage(tot_seq_c, method='ward')
-            clusters = fcluster(linkage_matrix, horizon, criterion='distance')
+            if len(tot_seq_c) > 1:
+                linkage_matrix = linkage(tot_seq_c, method='ward')
+                clusters = fcluster(linkage_matrix, horizon, criterion='distance')
         tot_seq['Cluster'] = clusters
         val_sce = tot_seq.groupby('Cluster').mean()
         val_sce.index = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),2)
@@ -649,8 +662,14 @@ class finder():
                 seq = (seq - mi) / (ma - mi)
                 pred_seq.append(seq.tolist())
         tot_seq=pd.DataFrame(pred_seq)
-        linkage_matrix = linkage(tot_seq, method='ward')
-        clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
+        if tot_seq.empty:
+            self.val_sce = pd.DataFrame(columns=range(horizon))
+            return
+        if len(tot_seq) == 1:
+            clusters = np.ones(1, dtype=int)
+        else:
+            linkage_matrix = linkage(tot_seq, method='ward')
+            clusters = fcluster(linkage_matrix, horizon/3, criterion='distance')
         tot_seq['Cluster'] = clusters
         val_sce = tot_seq.groupby('Cluster').mean()
         val_sce.index = round(pd.Series(clusters).value_counts(normalize=True).sort_index(),3)
